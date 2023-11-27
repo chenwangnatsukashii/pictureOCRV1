@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>2.3.12.RELEASE</version>
+        <version>2.7.10</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.example</groupId>
@@ -32,13 +32,6 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
-
-        <!-- beautyeye依赖 -->
-<!--        <dependency>-->
-<!--            <groupId>com.lijinjiang</groupId>-->
-<!--            <artifactId>beautyeye</artifactId>-->
-<!--            <version>3.9</version>-->
-<!--        </dependency>-->
 
         <!-- Tess4J依赖 for OCR -->
         <dependency>
@@ -80,7 +73,14 @@
         <dependency>
             <groupId>springframework</groupId>
             <artifactId>spring-core</artifactId>
-            <version>1.2.6</version>
+            <version>5.3.26</version>
+        </dependency>
+
+
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
         </dependency>
 
 
@@ -92,9 +92,12 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
-                    <image>
-                        <builder>paketobuildpacks/builder-jammy-base:latest</builder>
-                    </image>
+                    <excludes>
+                        <exclude>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                        </exclude>
+                    </excludes>
                 </configuration>
             </plugin>
         </plugins>
