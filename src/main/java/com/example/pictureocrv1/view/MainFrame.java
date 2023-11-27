@@ -216,7 +216,8 @@ public class MainFrame extends JFrame {
 
         ITesseract instance = new Tesseract();
         // 设置语言库位置
-        instance.setDatapath("src/main/resources/data");
+//        instance.setDatapath("src/main/resources/data");
+        instance.setDatapath("D:\\code\\pictureOCRV1\\src\\main\\resources\\data\\");
         // 设置语言
         instance.setLanguage(language);
         Thread thread = new Thread(() -> {
@@ -226,6 +227,7 @@ public class MainFrame extends JFrame {
             } catch (Exception e) {
                 e.printStackTrace();
             }
+            System.out.println(result);
             resultArea.setText(result);
         });
         ProgressBar.show(this, thread, "图片正在识别中，请稍后...", "执行结束", "取消");
