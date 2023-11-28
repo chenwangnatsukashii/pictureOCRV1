@@ -10,10 +10,10 @@ public class PictureOcrv1Application {
 
     public static void main(String[] args) {
         SpringApplication.run(PictureOcrv1Application.class, args);
-        String versionSpring = SpringVersion.getVersion();
-        String versionSpringBoot = SpringBootVersion.getVersion();
-        System.out.println("Spring Version：" + versionSpring);
-        System.out.println("SpringBoot Version：" + versionSpringBoot);
+//        String versionSpring = SpringVersion.getVersion();
+//        String versionSpringBoot = SpringBootVersion.getVersion();
+//        System.out.println("Spring Version：" + versionSpring);
+//        System.out.println("SpringBoot Version：" + versionSpringBoot);
 
     }
 

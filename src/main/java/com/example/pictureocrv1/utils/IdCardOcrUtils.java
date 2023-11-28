@@ -6,6 +6,7 @@ import org.springframework.http.MediaType;
 import java.util.Base64;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 
@@ -33,11 +34,11 @@ public class IdCardOcrUtils {
         //设置请求头格式
         headers.setContentType(MediaType.APPLICATION_JSON);
         //构建请求参数
-        MultiValueMap<String, String> map = new LinkedMultiValueMap<String, String>();
+        MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
         //添加请求参数images，并将Base64编码的图片传入
         map.add("images", ImageToBase64(bytes));
         //构建请求
-        HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<MultiValueMap<String, String>>(map, headers);
+        HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(map, headers);
         RestTemplate restTemplate = new RestTemplate();
         //发送请求, springboot内置的restTemplate
         Map json = restTemplate.postForEntity("http://127.0.0.1:8868/predict/ocr_system", request, Map.class).getBody();
@@ -56,7 +57,7 @@ public class IdCardOcrUtils {
         System.out.println("=======================接下来就是使用正则表达提取文字信息了===============================");
         List<Map> maps = jsons.get(0);
         String name = predictName(maps);
-        if (name.equals("") || name == null) {
+        if (name.isEmpty()) {
             name = fullName(trim);
         }
         System.out.println("姓名：" + name);
@@ -94,7 +95,7 @@ public class IdCardOcrUtils {
      * @param bytes 图片的byte字节数组
      * @return 身份证反面信息，Map集合，包括身份证反面的：签发机关、有效期限
      */
-    public static Map<String, String> getFanMian(byte[] bytes) {
+    public static Map<String, String> getIDCardBack(byte[] bytes) {
         try {
             StringBuilder result = new StringBuilder();
 
@@ -102,11 +103,11 @@ public class IdCardOcrUtils {
             //设置请求头格式
             headers.setContentType(MediaType.APPLICATION_JSON);
             //构建请求参数
-            MultiValueMap<String, String> map = new LinkedMultiValueMap<String,String>();
+            MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
             //添加请求参数images，并将Base64编码的图片传入
             map.add("images", ImageToBase64(bytes));
             //构建请求
-            HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<MultiValueMap<String, String>>(map, headers);
+            HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(map, headers);
             RestTemplate restTemplate = new RestTemplate();
             //发送请求, springboot内置的restTemplate
             Map json = restTemplate.postForEntity("http://127.0.0.1:8868/predict/ocr_system", request, Map.class).getBody();
@@ -307,7 +308,7 @@ public class IdCardOcrUtils {
      * @return 图片的base64为内容
      */
     private static String ImageToBase64(byte[] data) {
-        // 直接调用springboot内置的springframework内置的方法
+        // 直接调用JDK内置的方法
         return Base64.getEncoder().encodeToString(data);
     }
 
