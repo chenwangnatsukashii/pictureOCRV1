@@ -10,4 +10,22 @@ ls -l /usr/bin | grep python
 rm /usr/bin/python
 ln -s /usr/bin/python3.10 /usr/bin/python
 
-pip install pillow==10.0.0 -i https://pypi.tuna.tsinghua.edu.cn/simple
+pip3 install pillow==10.0.0 -i https://pypi.tuna.tsinghua.edu.cn/simple
+
+
+#下载python
+http://python.p2hp.com/
+http://python.p2hp.com/downloads/macos/index.html
+
+#安装paddlepaddle
+pip install paddlepaddle==2.5.1 -i https://mirror.baidu.com/pypi/simple
+
+#安装paddleocr
+pip install paddleocr -i https://mirror.baidu.com/pypi/simple
+
+#升级pip
+python -m pip install --upgrade pip -i https://pypi.douban.com/simple --user
+
+#安装Hub Serving
+pip install paddlehub -i https://mirror.baidu.com/pypi/simple
+

@@ -44,10 +44,4 @@ public class PaddleOcrTest {
         }
     }
 
-    @PostMapping("/test")
-    public void test() {
-        System.out.println(1111111111);
-    }
-
-
 }

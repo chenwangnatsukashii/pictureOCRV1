@@ -28,60 +28,64 @@ public class IdCardOcrUtils {
      */
     public static Map<String, String> getStringStringMap(byte[] bytes) {
 
-        StringBuilder result = new StringBuilder();
+        try {
 
-        HttpHeaders headers = new HttpHeaders();
-        //设置请求头格式
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        //构建请求参数
-        MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
-        //添加请求参数images，并将Base64编码的图片传入
-        map.add("images", ImageToBase64(bytes));
-        //构建请求
-        HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(map, headers);
-        RestTemplate restTemplate = new RestTemplate();
-        //发送请求, springboot内置的restTemplate
-        Map json = restTemplate.postForEntity("http://127.0.0.1:8868/predict/ocr_system", request, Map.class).getBody();
-        System.out.println(json);
-        List<List<Map>> jsons = (List<List<Map>>) json.get("results");
-        System.out.println(jsons);
+            StringBuilder result = new StringBuilder();
 
-        for (int i = 0; i < jsons.get(0).size(); i++) {
-            System.out.println("当前的文字是：" + jsons.get(0).get(i).get("text"));
-            // 这里光靠这个trim()有些空格是去除不掉的，所以还需要使用替换这个，双重保险
-            result.append(jsons.get(0).get(i).get("text").toString().trim().replace(" ", ""));
+            HttpHeaders headers = new HttpHeaders();
+            //设置请求头格式
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            //构建请求参数
+            MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
+            //添加请求参数images，并将Base64编码的图片传入
+            map.add("images", ImageToBase64(bytes));
+            //构建请求
+            HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(map, headers);
+            RestTemplate restTemplate = new RestTemplate();
+            //发送请求, springboot内置的restTemplate
+            Map json = restTemplate.postForEntity("http://127.0.0.1:8868/predict/ocr_system", request, Map.class).getBody();
+            System.out.println(json);
+            List<List<Map>> jsons = (List<List<Map>>) json.get("results");
+            System.out.println(jsons);
+
+            for (int i = 0; i < jsons.get(0).size(); i++) {
+                System.out.println("当前的文字是：" + jsons.get(0).get(i).get("text"));
+                // 这里光靠这个trim()有些空格是去除不掉的，所以还需要使用替换这个，双重保险
+                result.append(jsons.get(0).get(i).get("text").toString().trim().replace(" ", ""));
+            }
+            String trim = result.toString().trim();
+            System.out.println("=================拼接后的文字是=========================");
+            System.out.println(trim);
+            System.out.println("=======================接下来就是使用正则表达提取文字信息了===============================");
+            List<Map> maps = jsons.get(0);
+            String name = predictName(maps);
+            if (name.isEmpty()) {
+                name = fullName(trim);
+            }
+            System.out.println("姓名：" + name);
+            String nation = national(maps);
+            System.out.println("民族：" + nation);
+            String address = address(maps);
+            System.out.println("地址：" + address);
+            String cardNumber = cardNumber(maps);
+            System.out.println("身份证号：" + cardNumber);
+            String sex = sex(cardNumber);
+            System.out.println("性别：" + sex);
+            String birthday = birthday(cardNumber);
+            System.out.println("出生：" + birthday);
+
+            Map<String, String> userInfoMap = new HashMap<>();
+            userInfoMap.put("name", name);
+            userInfoMap.put("nation", nation);
+            userInfoMap.put("address", address);
+            userInfoMap.put("cardNumber", cardNumber);
+            userInfoMap.put("sex", sex);
+            userInfoMap.put("birthday", birthday);
+            return userInfoMap;
+        } catch (RestClientException e){
+            e.printStackTrace();
+            return null;
         }
-        String trim = result.toString().trim();
-        System.out.println("=================拼接后的文字是=========================");
-        System.out.println(trim);
-        System.out.println("=======================接下来就是使用正则表达提取文字信息了===============================");
-        List<Map> maps = jsons.get(0);
-        String name = predictName(maps);
-        if (name.isEmpty()) {
-            name = fullName(trim);
-        }
-        System.out.println("姓名：" + name);
-        String nation = national(maps);
-        System.out.println("民族：" + nation);
-        String address = address(maps);
-        System.out.println("地址：" + address);
-        String cardNumber = cardNumber(maps);
-        System.out.println("身份证号：" + cardNumber);
-        String sex = sex(cardNumber);
-        System.out.println("性别：" + sex);
-        String birthday = birthday(cardNumber);
-        System.out.println("出生：" + birthday);
-
-        // return json1;
-
-        Map<String, String> userInfoMap = new HashMap<>();
-        userInfoMap.put("name", name);
-        userInfoMap.put("nation", nation);
-        userInfoMap.put("address", address);
-        userInfoMap.put("cardNumber", cardNumber);
-        userInfoMap.put("sex", sex);
-        userInfoMap.put("birthday", birthday);
-        return userInfoMap;
     }
 
     // 上面的方法，使用了static修饰，下面的方法，也需要使用static修饰，这里使用
