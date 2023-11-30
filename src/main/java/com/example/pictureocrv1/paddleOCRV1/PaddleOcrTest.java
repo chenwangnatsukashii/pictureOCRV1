@@ -12,7 +12,7 @@ import java.util.Map;
 @RestController
 public class PaddleOcrTest {
     @PostMapping("/paddleOCRV1")
-    public Map<String, String> ocrTest(MultipartFile file) {
+    public Map<String, String> ocrTest(@RequestPart("testFile") MultipartFile file) {
         try {
             byte[] bytes = file.getBytes();
             return IdCardOcrUtils.getStringStringMap(bytes);

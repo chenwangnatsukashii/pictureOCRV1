@@ -29,3 +29,9 @@ python -m pip install --upgrade pip -i https://pypi.douban.com/simple --user
 #安装Hub Serving
 pip install paddlehub -i https://mirror.baidu.com/pypi/simple
 
+pip install -r requirements.txt -i https://mirror.baidu.com/pypi/simple
+
+hub install deploy/hubserving/ocr_system/
+
+#启动服务
+hub serving start -c deploy/hubserving/ocr_system/config.json
