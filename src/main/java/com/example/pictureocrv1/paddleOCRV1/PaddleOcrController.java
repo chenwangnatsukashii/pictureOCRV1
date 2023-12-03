@@ -1,20 +1,30 @@
 package com.example.pictureocrv1.paddleOCRV1;
 
+import com.example.pictureocrv1.DealDocument;
 import com.example.pictureocrv1.utils.IdCardOcrUtils;
+import org.apache.poi.xwpf.usermodel.XWPFPicture;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 @RestController
-public class PaddleOcrTest {
+public class PaddleOcrController {
     @PostMapping("/paddleOCRV1")
     public Map<String, String> ocrTest(@RequestPart("testFile") MultipartFile file) {
         try {
             byte[] bytes = file.getBytes();
+            List<XWPFPicture> allPicture = DealDocument.getAllPicture(bytes);
+
+            allPicture.forEach(picture ->{
+                byte[] pictureBytes = picture.getPictureData().getData();
+                IdCardOcrUtils.getStringStringMap(pictureBytes);
+            });
+
             return IdCardOcrUtils.getStringStringMap(bytes);
         } catch (IOException e) {
             e.printStackTrace();
@@ -32,11 +42,6 @@ public class PaddleOcrTest {
     public Map<String, String> ocrBack(@RequestPart("testFile") MultipartFile file) {
         try {
             byte[] bytes = file.getBytes();
-            // 这里可以考虑将前端页面上传的文件保存到文件夹中，返回图片的访问地址给前端。
-            // 也可考虑转成base64位，把base64位返回给前端。
-            // 或者在前端那里直接将图片转base64位，然后将base64位的图片赋值到对应的字段中，提交后保存到数据库中
-            // 然后用户在前端点击提交用户信息时，将对应的信息保存到数据库中
-            //  fanmianInfo.put("imgUrl", "图片的访问地址或者图片的base64位");
             return IdCardOcrUtils.getIDCardBack(bytes);
         } catch (IOException e) {
             e.printStackTrace();

@@ -1,25 +1,31 @@
 package com.example.pictureocrv1.view;
 
+import com.example.pictureocrv1.DealDocument;
+import com.example.pictureocrv1.paddleOCRV1.PaddleOcrController;
+import com.example.pictureocrv1.utils.IdCardOcrUtils;
 import com.lijinjiang.beautyeye.ch3_button.BEButtonUI;
 import net.sourceforge.tess4j.ITesseract;
 import net.sourceforge.tess4j.Tesseract;
+import org.apache.poi.xwpf.usermodel.XWPFPicture;
+import org.springframework.web.multipart.MultipartFile;
 
+import javax.annotation.Resource;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.filechooser.FileSystemView;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.List;
+
+import static com.example.pictureocrv1.view.Example.*;
 
 /**
  * @ClassName MainFrame
@@ -33,6 +39,8 @@ public class MainFrame extends JFrame {
     private JComboBox<String> languageCombobox;
     private Map<String, String> languageMap;
     private JSplitPane splitPane;
+
+    private JPanel picturePanel;
     protected JLabel previewLabel;//预览标签
     private JTextArea resultArea;
     protected BufferedImage ocrImage;
@@ -40,8 +48,11 @@ public class MainFrame extends JFrame {
     private String language = "chi_sim";
     private final String tempImage = MainFrame.class.getResource("/").getPath() + "img/temp.jpg";
 
+    @Resource
+    private PaddleOcrController paddleOcrController;
+
     public MainFrame() {
-        this.setTitle("OCR图像识别");
+        this.setTitle("文档图片检测");
         initLanguageMap();
         createOperatePanel();
         createSplitPane();
@@ -90,7 +101,7 @@ public class MainFrame extends JFrame {
         languageCombobox.setSelectedItem("中文");
         languageCombobox.addActionListener(e -> {
             // 选择对应语言库赋值
-            language = languageMap.get(languageCombobox.getSelectedItem());
+            language = languageMap.get(Objects.requireNonNull(languageCombobox.getSelectedItem()).toString());
         });
 
         // 灰度化+二值化处理图片
@@ -115,16 +126,22 @@ public class MainFrame extends JFrame {
     // 初始化显示区
     private void createSplitPane() {
         splitPane = new JSplitPane();
+
         // 设置左边预览面板
-        previewLabel = new JLabel();
-        JScrollPane leftPane = new JScrollPane(previewLabel);
+        picturePanel = new JPanel();
+        picturePanel.setLayout(new GridLayout(5, 1));
+        JScrollPane leftPane = new JScrollPane(picturePanel);
+        leftPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
+        leftPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
         leftPane.setBorder(null);//设置边框为空
         splitPane.setLeftComponent(leftPane);
+
         // 设置右边结果显示面板
         resultArea = new JTextArea();
         resultArea.setFont(new Font("", Font.BOLD, 20));
         resultArea.setBorder(null);
         resultArea.setEditable(false);//设置结果区域不可编辑
+//        resultArea.setLineWrap(true);
         JScrollPane rightPane = new JScrollPane(resultArea);
         rightPane.setBorder(null);//设置边框为空
         splitPane.setRightComponent(rightPane);
@@ -143,7 +160,82 @@ public class MainFrame extends JFrame {
     // 选择需要识别的图片
     // 支持：TIFF、JPEG、GIF、PNG和BMP图像格式
     private void showChooseFileDialog() {
-        JFileChooser fileChooser = new JFileChooser(); // 初始化一个文件选择器
+        JFileChooser fileChooser = getjFileChooser();
+        int result = fileChooser.showOpenDialog(this);
+        if (result == JFileChooser.APPROVE_OPTION) {
+            File selectedFile = fileChooser.getSelectedFile();
+            filePath = selectedFile.getAbsolutePath();
+
+            String[] fileTypeArray = filePath.split("\\.");
+            String fileType = fileTypeArray[fileTypeArray.length - 1];
+
+            if (fileType.equalsIgnoreCase(FileType.DOCX.getName())) {
+                File file = new File(filePath);
+                try (InputStream inputStream = Files.newInputStream(file.toPath())) {
+                    byte[] buffer = new byte[(int) file.length()];
+                    while (inputStream.read(buffer, 0, buffer.length) != -1) {
+                    }
+
+                    // 这里的buffer就是包含了文件内容的字节数组
+                    List<XWPFPicture> allPicture = DealDocument.getAllPicture(buffer);
+
+                    List<String> textList = new ArrayList<>(100);
+                    for (int i = 0; i < allPicture.size() - 1; i++) {
+                        byte[] pictureBytes = allPicture.get(i).getPictureData().getData();
+
+                        ImageIcon icon = new ImageIcon(pictureBytes);
+
+                        int iconWidth = icon.getIconWidth();
+                        int iconHeight = icon.getIconHeight();
+
+                        if (iconWidth > 1000 || iconHeight > 1000) {
+                            Image newImage = icon.getImage().getScaledInstance((int) (iconWidth * 0.5), (int) (iconHeight * 0.5), Image.SCALE_DEFAULT);
+                            icon = new ImageIcon(newImage);
+                        }
+
+                        JLabel label = new JLabel(icon);
+                        picturePanel.add(label);
+
+                        if (i == 5) {
+                            picturePanel.revalidate();
+                            picturePanel.setLayout(new GridLayout(10, 1));
+                            return;
+                        }
+
+//                        Map res = IdCardOcrUtils.getStringStringMap(pictureBytes);
+//                        assert res != null;
+//                        textList.add((String) res.get("appendText"));
+//                        if (textList.size() == 5) {
+//                            String res11 = String.join("\n", textList);
+//                            resultArea.setText(res11);
+//                            return;
+//                        }
+                    }
+
+                    return;
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+            }
+//            ImageIcon imageIcon = new ImageIcon(filePath);
+//            previewLabel.setIcon(imageIcon);
+//            ImageIcon imageIcon1 = new ImageIcon(filePath);
+//            previewLabel1.setIcon(imageIcon1);
+
+
+            ImageIcon imageIcon = new ImageIcon(filePath);
+            previewLabel.setIcon(imageIcon);
+            try {
+                ocrImage = ImageIO.read(Files.newInputStream(Paths.get(filePath)));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private JFileChooser getjFileChooser() {
+        JFileChooser fileChooser = new JFileChooser();
         if (filePath == null || filePath.isEmpty()) {
             FileSystemView fsv = fileChooser.getFileSystemView();
             fileChooser.setCurrentDirectory(fsv.getHomeDirectory()); // 设置桌面为当前文件路径
@@ -161,19 +253,9 @@ public class MainFrame extends JFrame {
         fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY); // 可选文件夹和文件
         fileChooser.setMultiSelectionEnabled(false); // 设置可多选
         fileChooser.removeChoosableFileFilter(fileChooser.getAcceptAllFileFilter()); // 不显示所有文件的下拉选
-        fileChooser.addChoosableFileFilter(new FileNameExtensionFilter("图片", "TIFF", "JPG", "GIF", "PNG", "BMP"));
-        int result = fileChooser.showOpenDialog(this);
-        if (result == JFileChooser.APPROVE_OPTION) {
-            File selectedFile = fileChooser.getSelectedFile();
-            filePath = selectedFile.getAbsolutePath();
-            ImageIcon imageIcon = new ImageIcon(filePath);
-            previewLabel.setIcon(imageIcon);
-            try {
-                ocrImage = ImageIO.read(Files.newInputStream(Paths.get(filePath)));
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
+        fileChooser.addChoosableFileFilter(new FileNameExtensionFilter("文件", "TIFF", "JPG", "GIF", "PNG", "BMP", "DOCX"));
+
+        return fileChooser;
     }
 
     // 灰度化+二值化处理图片
@@ -232,4 +314,6 @@ public class MainFrame extends JFrame {
         });
         ProgressBar.show(this, thread, "图片正在识别中，请稍后...", "执行结束", "取消");
     }
+
+
 }
