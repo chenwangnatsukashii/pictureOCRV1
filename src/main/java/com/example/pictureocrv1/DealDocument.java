@@ -20,6 +20,7 @@ public class DealDocument {
     public static List<XWPFPicture> getAllPicture(byte[] documentByte) throws IOException {
         InputStream inputStream = new ByteArrayInputStream(documentByte);
         XWPFDocument document = new XWPFDocument(inputStream);
+
         // 获取文档中的所有图片
         List<XWPFPicture> pictures = new ArrayList<>();
 

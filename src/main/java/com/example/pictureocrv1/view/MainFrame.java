@@ -1,15 +1,10 @@
 package com.example.pictureocrv1.view;
 
 import com.example.pictureocrv1.DealDocument;
-import com.example.pictureocrv1.paddleOCRV1.PaddleOcrController;
 import com.example.pictureocrv1.utils.IdCardOcrUtils;
 import com.lijinjiang.beautyeye.ch3_button.BEButtonUI;
-import net.sourceforge.tess4j.ITesseract;
-import net.sourceforge.tess4j.Tesseract;
 import org.apache.poi.xwpf.usermodel.XWPFPicture;
-import org.springframework.web.multipart.MultipartFile;
 
-import javax.annotation.Resource;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -17,39 +12,29 @@ import javax.swing.filechooser.FileSystemView;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.*;
+import java.time.LocalDate;
 import java.util.List;
+import java.util.*;
 
-import static com.example.pictureocrv1.view.Example.*;
 
-/**
- * @ClassName MainFrame
- * @Description TODO
- * @Author Li
- * @Date 2022/10/20 23:19
- * @ModifyDate 2022/10/20 23:19
- * @Version 1.0
- */
 public class MainFrame extends JFrame {
     private JComboBox<String> languageCombobox;
     private Map<String, String> languageMap;
     private JSplitPane splitPane;
-
     private JPanel picturePanel;
     protected JLabel previewLabel;//预览标签
     private JTextArea resultArea;
     protected BufferedImage ocrImage;
     private String filePath;
     private String language = "chi_sim";
-    private final String tempImage = MainFrame.class.getResource("/").getPath() + "img/temp.jpg";
+    private final String tempImage = Objects.requireNonNull(MainFrame.class.getResource("/")).getPath() + "img/temp.jpg";
 
-    @Resource
-    private PaddleOcrController paddleOcrController;
+    private List<XWPFPicture> allPicture;
+
 
     public MainFrame() {
         this.setTitle("文档图片检测");
@@ -113,7 +98,7 @@ public class MainFrame extends JFrame {
         JButton executeBtn = new JButton("识别");
         executeBtn.setFocusable(false);
         executeBtn.setUI(new BEButtonUI().setNormalColor(BEButtonUI.NormalColor.green));
-        executeBtn.addActionListener(e -> execute(ocrImage));
+        executeBtn.addActionListener(e -> execute());
 
         operatePanel.add(openBtn);
         operatePanel.add(screenshotBtn);
@@ -177,9 +162,11 @@ public class MainFrame extends JFrame {
                     }
 
                     // 这里的buffer就是包含了文件内容的字节数组
-                    List<XWPFPicture> allPicture = DealDocument.getAllPicture(buffer);
+                    allPicture = DealDocument.getAllPicture(buffer);
 
-                    List<String> textList = new ArrayList<>(100);
+                    resultArea.append("文档中图片总个数： " + allPicture.size() + "\n");
+                    resultArea.paintImmediately(resultArea.getBounds());
+
                     for (int i = 0; i < allPicture.size() - 1; i++) {
                         byte[] pictureBytes = allPicture.get(i).getPictureData().getData();
 
@@ -198,30 +185,15 @@ public class MainFrame extends JFrame {
 
                         if (i == 5) {
                             picturePanel.revalidate();
-                            picturePanel.setLayout(new GridLayout(10, 1));
+                            picturePanel.setLayout(new GridLayout(i + 1, 1));
                             return;
                         }
-
-//                        Map res = IdCardOcrUtils.getStringStringMap(pictureBytes);
-//                        assert res != null;
-//                        textList.add((String) res.get("appendText"));
-//                        if (textList.size() == 5) {
-//                            String res11 = String.join("\n", textList);
-//                            resultArea.setText(res11);
-//                            return;
-//                        }
                     }
-
                     return;
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-
             }
-//            ImageIcon imageIcon = new ImageIcon(filePath);
-//            previewLabel.setIcon(imageIcon);
-//            ImageIcon imageIcon1 = new ImageIcon(filePath);
-//            previewLabel1.setIcon(imageIcon1);
 
 
             ImageIcon imageIcon = new ImageIcon(filePath);
@@ -286,33 +258,51 @@ public class MainFrame extends JFrame {
     }
 
     // 执行OCR识别
-    private void execute(BufferedImage targetImage) {
-        try {
-            File tempFile = new File(tempImage);
-            tempFile.mkdirs();
-            ImageIO.write(targetImage, "jpg", tempFile);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        File file = new File(tempImage);
+    private void execute() {
 
-        ITesseract instance = new Tesseract();
-        // 设置语言库位置
-//        instance.setDatapath("src/main/resources/data");
-        instance.setDatapath("D:\\code\\pictureOCRV1\\src\\main\\resources\\data\\");
-        // 设置语言
-        instance.setLanguage(language);
+
+
         Thread thread = new Thread(() -> {
-            String result = null;
-            try {
-                result = instance.doOCR(file);
-            } catch (Exception e) {
-                e.printStackTrace();
+            for (int i = 0; i < allPicture.size() - 1; i++) {
+                byte[] pictureBytes = allPicture.get(i).getPictureData().getData();
+
+                Map res = IdCardOcrUtils.getStringStringMap(pictureBytes);
+                assert res != null;
+                resultArea.append("第" + (i + 1) + "张图片：" + res.get("appendText").toString() + "\n");
+                resultArea.paintImmediately(resultArea.getBounds());
+
+                if (i == 5) {
+                    picturePanel.revalidate();
+                    picturePanel.setLayout(new GridLayout(10, 1));
+                    return;
+                }
             }
-            System.out.println(result);
-            resultArea.setText(result);
         });
-        ProgressBar.show(this, thread, "图片正在识别中，请稍后...", "执行结束", "取消");
+
+
+//        File file = new File(tempImage);
+//        ITesseract instance = new Tesseract();
+//        instance.setDatapath("D:\\code\\pictureOCRV1\\src\\main\\resources\\data\\");
+//        instance.setLanguage(language);
+//        Thread thread = new Thread(() -> {
+//            String result = null;
+//            try {
+//                result = instance.doOCR(file);
+//            } catch (Exception e) {
+//                e.printStackTrace();
+//            }
+//            resultArea.setText(result);
+//        });
+        ProgressBar.show(this, thread, "文档处理中，请稍后...", "执行结束", "取消");
+    }
+
+
+    public void appendJTextArea(String info) {
+        SwingUtilities.invokeLater(() -> {
+            if (info != null) {
+                resultArea.append(info + "\n");
+            }
+        });
     }
 
 

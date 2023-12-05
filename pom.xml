@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>2.7.10</version>
+        <version>3.2.0</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.example</groupId>
@@ -14,7 +14,7 @@
     <name>pictureOCRV1</name>
     <description>pictureOCRV1</description>
     <properties>
-        <java.version>1.8</java.version>
+        <java.version>17</java.version>
     </properties>
     <dependencies>
         <dependency>
@@ -58,7 +58,6 @@
         </dependency>
 
         <!-- for deal with doc -->
-        <!--解析doc文档HWPFDocument-->
         <dependency>
             <groupId>org.apache.poi</groupId>
             <artifactId>poi-scratchpad</artifactId>
@@ -72,13 +71,28 @@
         <dependency>
             <groupId>org.apache.poi</groupId>
             <artifactId>poi-ooxml</artifactId>
-            <version>4.1.2</version>
+            <version>5.1.0</version>
+        </dependency>
+
+        <!-- for deal with doc -->
+        <dependency>
+            <groupId>org.apache.pdfbox</groupId>
+            <artifactId>pdfbox</artifactId>
+            <version>2.0.24</version>
         </dependency>
 
         <dependency>
             <groupId>springframework</groupId>
             <artifactId>spring-core</artifactId>
-            <version>5.3.26</version>
+            <version>5.3.15</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.beautyeye</groupId>
+            <artifactId>beautyeye</artifactId>
+            <scope>system</scope>
+            <version>3.8</version>
+            <systemPath>${project.basedir}/bin/beautyeye-3.8.jar</systemPath>
         </dependency>
 
 

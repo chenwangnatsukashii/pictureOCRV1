@@ -1,13 +1,19 @@
 package com.example.pictureocrv1.utils;
 
+import org.apache.poi.util.StringUtil;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 
+import java.time.LocalDate;
+import java.time.Period;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
@@ -19,53 +25,23 @@ public class IdCardOcrUtils {
     private IdCardOcrUtils() {
     }
 
-
     public static Map<String, String> getStringStringMap(byte[] bytes) {
+        LocalDate todayDate = LocalDate.now();
+        System.out.println("当前日期：" + todayDate);
 
         try {
-            StringBuilder result = new StringBuilder();
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-
-            MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
-            map.add("images", ImageToBase64(bytes));
-
-            HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(map, headers);
-            RestTemplate restTemplate = new RestTemplate();
-            Map json = restTemplate.postForEntity("http://127.0.0.1:8868/predict/ocr_system", request, Map.class).getBody();
-            List<List<Map>> jsons = (List<List<Map>>) json.get("results");
+            List<Map> resMap = getResult(bytes);
 
             String text;
-            List<String> textList = new ArrayList<>(100);
-            for (int i = 0; i < jsons.get(0).size(); i++) {
-                text = jsons.get(0).get(i).get("text").toString().trim().replace(" ", "");
-                textList.add(text);
-                System.out.println("当前的文字是：" + text);
+            StringBuilder result = new StringBuilder();
+            for (Map map : resMap) {
+                text = map.get("text").toString().trim().replace(" ", "");
                 result.append(text);
             }
             String appendText = result.toString().trim();
-            System.out.println("====================拼接后的文字是====================");
-            System.out.println(appendText);
-            System.out.println("===========接下来就是使用正则表达提取文字信息了===========");
-            List<Map> maps = jsons.get(0);
-            String name = predictName(maps);
-            if (name.isEmpty()) {
-                name = fullName(appendText);
-            }
-//            String nation = national(maps);
-//            String address = address(maps);
-//            String cardNumber = cardNumber(maps);
-//            String sex = sex(cardNumber);
-//            String birthday = birthday(cardNumber);
 
             Map<String, String> userInfoMap = new HashMap<>();
-//            userInfoMap.put("name", name);
-//            userInfoMap.put("nation", nation);
-//            userInfoMap.put("address", address);
-//            userInfoMap.put("cardNumber", cardNumber);
-//            userInfoMap.put("sex", sex);
-//            userInfoMap.put("birthday", birthday);
-            userInfoMap.put("appendText", appendText);
+            userInfoMap.put("youXiaoQiXian", String.join("", getDetailInfo(appendText)));
             return userInfoMap;
         } catch (RestClientException e) {
             e.printStackTrace();
@@ -86,36 +62,19 @@ public class IdCardOcrUtils {
      */
     public static Map<String, String> getIDCardBack(byte[] bytes) {
         try {
+            List<Map> jsons = getResult(bytes);
+
             StringBuilder result = new StringBuilder();
-
-            HttpHeaders headers = new HttpHeaders();
-            //设置请求头格式
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            //构建请求参数
-            MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
-            //添加请求参数images，并将Base64编码的图片传入
-            map.add("images", ImageToBase64(bytes));
-            //构建请求
-            HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(map, headers);
-            RestTemplate restTemplate = new RestTemplate();
-            //发送请求, springboot内置的restTemplate
-            Map json = restTemplate.postForEntity("http://127.0.0.1:8868/predict/ocr_system", request, Map.class).getBody();
-            System.out.println(json);
-            List<List<Map>> jsons = (List<List<Map>>) json.get("results");
-            System.out.println(jsons);
-
-            for (int i = 0; i < jsons.get(0).size(); i++) {
-                System.out.println("当前的文字是：" + jsons.get(0).get(i).get("text"));
+            for (int i = 0; i < jsons.size(); i++) {
+                System.out.println("当前的文字是：" + jsons.get(i).get("text"));
                 // 这里光靠这个trim()有些空格是去除不掉的，所以还需要使用替换这个，双重保险
-                result.append(jsons.get(0).get(i).get("text").toString().trim().replace(" ", ""));
+                result.append(jsons.get(i).get("text").toString().trim().replace(" ", ""));
             }
-            String trim = result.toString().trim();
-            List<Map> maps = jsons.get(0);
 
             // 身份证反面签发机关
-            String qianFaJiGuan = qianFaJiGuan(maps);
+            String qianFaJiGuan = qianFaJiGuan(jsons);
             // 身份证反面有效期限
-            String youXiaoQiXian = youXiaoQiXian(maps);
+            String youXiaoQiXian = youXiaoQiXian(jsons);
 
             Map<String, String> mapsInfo = new HashMap<>();
             mapsInfo.put("qianFaJiGuan", qianFaJiGuan);
@@ -130,6 +89,22 @@ public class IdCardOcrUtils {
         }
     }
 
+    private static List<Map> getResult(byte[] bytes) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
+        map.add("images", ImageToBase64(bytes));
+
+        HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(map, headers);
+        RestTemplate restTemplate = new RestTemplate();
+        Map json = restTemplate.postForEntity("http://127.0.0.1:8868/predict/ocr_system", request, Map.class).getBody();
+        List<List<Map>> jsons = (List<List<Map>>) json.get("results");
+        if (!jsons.isEmpty()) {
+            return jsons.get(0);
+        }
+        return new ArrayList<>();
+    }
 
     /**
      * 获取身份证姓名
@@ -205,11 +180,7 @@ public class IdCardOcrUtils {
         StringBuilder addressJoin = new StringBuilder();
         for (Map map : maps) {
             String str = map.get("text").toString().trim().replace(" ", "");
-            if (str.contains("住址") || str.contains("址") || str.contains("省") || str.contains("市")
-                    || str.contains("县") || str.contains("街") || str.contains("乡") || str.contains("村")
-                    || str.contains("镇") || str.contains("区") || str.contains("城") || str.contains("组")
-                    || str.contains("号") || str.contains("幢") || str.contains("室")
-            ) {
+            if (str.contains("住址") || str.contains("址") || str.contains("省") || str.contains("市") || str.contains("县") || str.contains("街") || str.contains("乡") || str.contains("村") || str.contains("镇") || str.contains("区") || str.contains("城") || str.contains("组") || str.contains("号") || str.contains("幢") || str.contains("室")) {
                 addressJoin.append(str);
             }
         }
@@ -349,7 +320,6 @@ public class IdCardOcrUtils {
             // 如果图片是歪的，识别到的结果，有效期限和日期不在用一行的
             // 具体那一张稍微正一点的图片和一张歪一点的图片，debugger，这里看一下就知道了
             if (str.contains("有效期限")) {
-                // String为引用类型
                 str = str.replace("有效期限", "");
             }
             String pattern = "\\d{4}(\\-|\\/|.)\\d{1,2}\\1\\d{1,2}-\\d{4}(\\-|\\/|.)\\d{1,2}\\1\\d{1,2}";
@@ -362,5 +332,69 @@ public class IdCardOcrUtils {
         return youXiaoQiXian;
     }
 
+    public static void main(String[] args) {
+        String[] testAll = new String[]{"级建造师受人力资源和社会保障部住房和城乡建设部委托，本证书由四川省人力资源和社会保障厅四川省住房和城乡姓　名：尹航建设厅批准颁发，它表明持证人通过四证件号码：542622199407300216川省统一组织的考试，取得二级建造师性别：男执业资格出生年月：1994年07月专业：市政公用工程力资源和水批准日期：2019年05月26日A★★管理号：201905988510008503专业技术人员资格专业技术人员资格选书专用套人力资源和社会保障厅住房和城乡建设厅",
+                "使用有效期：2022年05月10日2024年09月17日中华人民共和国二级建造师注册证书姓名：尹航性别：男出生日期：1994-07-30注册编号：川2512019202101082聘用企业：四川省蜀通建设集团有限责任公司注册专业：市政公用工程（有效期：2021-09-18至2024-09-17)四房和省建住房源城乡建设厅个人签名：王签发日期2021年9月18日请登录“四川建设发布”微信公众号扫一扫查询签名日期：/20..10",
+                "建筑施工企业项目负责人安全生产考核合格证书编号：川建安B（2021）1052428姓名：尹航性别：男出生年月：1994年07月30日企业名称：四川省蜀通建设集团有限责任公司职务：项目负责人（项目经理）初次领证日期：2021年04月24日有效期：2023年08月17日至2024年04月23日省建发证机关：彩建设厅发证日期：200年8月中华人民共和国住房和城乡建设部监制",
+                "姓名尹航性别男民族汉出生1994年7月30日住址成都市天府新区华阳天府大道南段846号附12号公民身份号码542622199407300216",
+                "中华人民共和国居民身份证签发机关成都市公安局天府新区分局有效期限2018.10.23-2028.10.23",
+                "普通高等学校毕业证书学生尹航性别男，一九九四年七月三十日生，于二〇一二年九月至二O一七年六月在本校给排水科学与工程专业四年制本科学习，修完教学计划规定的全部课程，成绩合格，准予毕业。康实学校武汉大学校长：印贤二0一七年六月三十日证书编号：104861201705004788中华人民共和国教育部学历证书查询网址：http://www.chsi.com.cn武汉大学监制"};
+
+        for (String s : testAll) {
+            getDetailInfo(s);
+        }
+    }
+
+    public static ArrayList<String> getDetailInfo(String s) {
+        LocalDate todayDate = LocalDate.now();
+        var resDetailInfo = new ArrayList<String>();
+
+        var res = dateVerification(s);
+        System.out.println(res);
+        res.forEach(date -> {
+            var dateSplit = Arrays.stream(date.split(" ")).mapToInt(Integer::parseInt).toArray();
+            assert dateSplit.length == 6;
+            LocalDate startDate = LocalDate.of(dateSplit[0], dateSplit[1], dateSplit[2]);
+            LocalDate endDate = LocalDate.of(dateSplit[3], dateSplit[4], dateSplit[5]);
+            System.out.println("证书有效期：" + startDate + "至" + endDate);
+            var utilDay = todayDate.until(endDate, ChronoUnit.DAYS);
+            if (utilDay <= 0) {
+                System.out.println("证书已到期");
+            } else {
+                var dateList = new ArrayList<String>();
+                dateList.add("证书有效，剩余有效期：");
+                Period period = Period.between(todayDate, endDate);
+                if (period.getYears() > 0) {
+                    dateList.add(period.getYears() + "年");
+                }
+                if (period.getMonths() > 0) {
+                    dateList.add(period.getMonths() + "个月");
+                }
+                if (period.getDays() > 0) {
+                    dateList.add(period.getDays() + "天");
+                }
+                System.out.println(String.join("", dateList));
+            }
+        });
+
+        return resDetailInfo;
+    }
+
+    public static ArrayList<String> dateVerification(String appendText) {
+        var resStrList = new ArrayList<String>(10);
+
+        String allChar = "(\\u4e00-\\u9fa5|.)";
+        String oneDate = "20\\d{2}" + allChar + "\\d{1,2}" + allChar + "\\d{1,2}";
+        String regex = oneDate + allChar + "{1,2}" + oneDate;
+
+        Pattern pattern = Pattern.compile(regex);
+        Matcher matcher = pattern.matcher(appendText);
+
+        while (matcher.find()) {
+            resStrList.add(matcher.group().replaceAll("\\D+", " "));
+        }
+
+        return resStrList;
+    }
 
 }
