@@ -1,5 +1,6 @@
 package com.example.pictureocrv1.utils;
 
+import com.example.pictureocrv1.dto.OutputDTO;
 import org.apache.poi.util.StringUtil;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -25,10 +26,7 @@ public class IdCardOcrUtils {
     private IdCardOcrUtils() {
     }
 
-    public static Map<String, String> getStringStringMap(byte[] bytes) {
-        LocalDate todayDate = LocalDate.now();
-        System.out.println("当前日期：" + todayDate);
-
+    public static List<OutputDTO> getStringStringMap(byte[] bytes) {
         try {
             List<Map> resMap = getResult(bytes);
 
@@ -40,54 +38,13 @@ public class IdCardOcrUtils {
             }
             String appendText = result.toString().trim();
 
-            Map<String, String> userInfoMap = new HashMap<>();
-            userInfoMap.put("youXiaoQiXian", String.join("", getDetailInfo(appendText)));
-            return userInfoMap;
+            return getDetailInfo(appendText);
         } catch (RestClientException e) {
             e.printStackTrace();
             return null;
         }
     }
 
-    // 上面的方法，使用了static修饰，下面的方法，也需要使用static修饰，这里使用
-    // private修饰的话，在其他类中直接通过IdCardOcrUtils.predictName()这个就访问不到了, 或者protected修饰，
-    // 不然其他类访问不就行了吗？
-    // 这里唯一能通过IdCardOcrUtils.方法名，访问的是public修饰的方法
-
-    /**
-     * 身份证反面识别
-     *
-     * @param bytes 图片的byte字节数组
-     * @return 身份证反面信息，Map集合，包括身份证反面的：签发机关、有效期限
-     */
-    public static Map<String, String> getIDCardBack(byte[] bytes) {
-        try {
-            List<Map> jsons = getResult(bytes);
-
-            StringBuilder result = new StringBuilder();
-            for (int i = 0; i < jsons.size(); i++) {
-                System.out.println("当前的文字是：" + jsons.get(i).get("text"));
-                // 这里光靠这个trim()有些空格是去除不掉的，所以还需要使用替换这个，双重保险
-                result.append(jsons.get(i).get("text").toString().trim().replace(" ", ""));
-            }
-
-            // 身份证反面签发机关
-            String qianFaJiGuan = qianFaJiGuan(jsons);
-            // 身份证反面有效期限
-            String youXiaoQiXian = youXiaoQiXian(jsons);
-
-            Map<String, String> mapsInfo = new HashMap<>();
-            mapsInfo.put("qianFaJiGuan", qianFaJiGuan);
-            mapsInfo.put("youXiaoQiXian", youXiaoQiXian);
-
-            // maps.put("flag", "back"); 本来想放一个标记的，用来标记正反面
-            return mapsInfo;
-
-        } catch (RestClientException e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
 
     private static List<Map> getResult(byte[] bytes) {
         HttpHeaders headers = new HttpHeaders();
@@ -345,43 +302,77 @@ public class IdCardOcrUtils {
         }
     }
 
-    public static ArrayList<String> getDetailInfo(String s) {
+    public static List<OutputDTO> getDetailInfo(String s) {
         LocalDate todayDate = LocalDate.now();
-        var resDetailInfo = new ArrayList<String>();
+        List<OutputDTO> outputList = new ArrayList<>();
 
-        var res = dateVerification(s);
-        System.out.println(res);
+        List<String> res = dateVerification(s);
+        if (res.isEmpty()) {
+            outputList.add(new OutputDTO("无需识别", false, false));
+            return outputList;
+        }
+
         res.forEach(date -> {
-            var dateSplit = Arrays.stream(date.split(" ")).mapToInt(Integer::parseInt).toArray();
-            assert dateSplit.length == 6;
+            int[] dateSplit = validDate(date);
+            if (dateSplit.length != 6) {
+                outputList.add(new OutputDTO("识别出错", true, true));
+                return;
+            }
             LocalDate startDate = LocalDate.of(dateSplit[0], dateSplit[1], dateSplit[2]);
             LocalDate endDate = LocalDate.of(dateSplit[3], dateSplit[4], dateSplit[5]);
-            System.out.println("证书有效期：" + startDate + "至" + endDate);
-            var utilDay = todayDate.until(endDate, ChronoUnit.DAYS);
+
+            List<String> resDetailInfo = new ArrayList<>();
+            resDetailInfo.add("证书有效期：" + startDate + "至" + endDate);
+
+            long utilDay = todayDate.until(endDate, ChronoUnit.DAYS);
             if (utilDay <= 0) {
-                System.out.println("证书已到期");
+                resDetailInfo.add("证书已到期。");
+                outputList.add(new OutputDTO(String.join(" ", resDetailInfo), true, true));
             } else {
-                var dateList = new ArrayList<String>();
-                dateList.add("证书有效，剩余有效期：");
+                resDetailInfo.add("证书有效，剩余有效期：");
                 Period period = Period.between(todayDate, endDate);
                 if (period.getYears() > 0) {
-                    dateList.add(period.getYears() + "年");
+                    resDetailInfo.add(period.getYears() + "年");
                 }
                 if (period.getMonths() > 0) {
-                    dateList.add(period.getMonths() + "个月");
+                    resDetailInfo.add(period.getMonths() + "个月");
                 }
                 if (period.getDays() > 0) {
-                    dateList.add(period.getDays() + "天");
+                    resDetailInfo.add(period.getDays() + "天");
                 }
-                System.out.println(String.join("", dateList));
             }
+            outputList.add(new OutputDTO(String.join(" ", resDetailInfo), false, true));
         });
 
-        return resDetailInfo;
+        return outputList;
     }
 
-    public static ArrayList<String> dateVerification(String appendText) {
-        var resStrList = new ArrayList<String>(10);
+    private static int[] validDate(String date) {
+        String[] dateSplit = date.split(" ");
+        if (dateSplit.length == 6) {
+            return Arrays.stream(dateSplit).mapToInt(Integer::parseInt).toArray();
+        }
+        List<String> res = new ArrayList<>();
+        for (String s : dateSplit) {
+            int strLen = s.length();
+            if (strLen == 2) {
+                res.add(s);
+            } else if (strLen == 4) {
+                res.add(s);
+            } else if (strLen == 5) {
+                res.add(s.substring(0, 4));
+                res.add(s.substring(4, 5));
+            } else if (strLen == 6) {
+                res.add(s.substring(0, 4));
+                res.add(s.substring(4, 6));
+            }
+        }
+
+        return res.stream().mapToInt(Integer::parseInt).toArray();
+    }
+
+    public static List<String> dateVerification(String appendText) {
+        List<String> resStrList = new ArrayList<>(10);
 
         String allChar = "(\\u4e00-\\u9fa5|.)";
         String oneDate = "20\\d{2}" + allChar + "\\d{1,2}" + allChar + "\\d{1,2}";

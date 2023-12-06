@@ -1,8 +1,11 @@
 package com.example.pictureocrv1.view;
 
 import com.example.pictureocrv1.DealDocument;
+import com.example.pictureocrv1.dto.OutputDTO;
+import com.example.pictureocrv1.dto.ResDTO;
 import com.example.pictureocrv1.utils.IdCardOcrUtils;
 import com.lijinjiang.beautyeye.ch3_button.BEButtonUI;
+import org.apache.logging.log4j.util.Strings;
 import org.apache.poi.xwpf.usermodel.XWPFPicture;
 
 import javax.imageio.ImageIO;
@@ -19,6 +22,7 @@ import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 
 public class MainFrame extends JFrame {
@@ -123,7 +127,7 @@ public class MainFrame extends JFrame {
 
         // 设置右边结果显示面板
         resultArea = new JTextArea();
-        resultArea.setFont(new Font("", Font.BOLD, 20));
+        resultArea.setFont(new Font("", Font.BOLD, 16));
         resultArea.setBorder(null);
         resultArea.setEditable(false);//设置结果区域不可编辑
 //        resultArea.setLineWrap(true);
@@ -183,7 +187,7 @@ public class MainFrame extends JFrame {
                         JLabel label = new JLabel(icon);
                         picturePanel.add(label);
 
-                        if (i == 5) {
+                        if (i == 10) {
                             picturePanel.revalidate();
                             picturePanel.setLayout(new GridLayout(i + 1, 1));
                             return;
@@ -259,41 +263,50 @@ public class MainFrame extends JFrame {
 
     // 执行OCR识别
     private void execute() {
+        LocalDate todayDate = LocalDate.now();
+        resultArea.append("当前日期：" + todayDate + "\n");
 
-
-
+        ResDTO resDTO = new ResDTO();
+        resDTO.setTotal(new AtomicInteger());
+        resDTO.setFail(new AtomicInteger());
+        resDTO.setSuccess(new AtomicInteger());
         Thread thread = new Thread(() -> {
             for (int i = 0; i < allPicture.size() - 1; i++) {
                 byte[] pictureBytes = allPicture.get(i).getPictureData().getData();
 
-                Map res = IdCardOcrUtils.getStringStringMap(pictureBytes);
-                assert res != null;
-                resultArea.append("第" + (i + 1) + "张图片：" + res.get("appendText").toString() + "\n");
-                resultArea.paintImmediately(resultArea.getBounds());
+                List<OutputDTO> outputDTOList = IdCardOcrUtils.getStringStringMap(pictureBytes);
+                for (int j = 0; j < outputDTOList.size(); j++) {
+                    OutputDTO output = outputDTOList.get(j);
 
-                if (i == 5) {
+                    if (output.isRecognizeFlag()) {
+                        resDTO.getTotal().incrementAndGet();
+                        if (output.isWarningFlag()) {
+                            resDTO.getFail().incrementAndGet();
+                        } else {
+                            resDTO.getSuccess().incrementAndGet();
+                        }
+                    }
+
+                    if (j == 0) {
+                        resultArea.append("第" + (i + 1) + "张图片：" + output.getDetailInfo() + "\n");
+                    } else {
+                        resultArea.append(Strings.repeat(" ", 18) + output.getDetailInfo() + "\n");
+                    }
+                }
+
+                if (i == 10) {
+                    resultArea.append("一共识别验证了：" + resDTO.getTotal() + "处有效时间, 其中未过期：" + resDTO.getSuccess() +
+                            "处，已过期：" + resDTO.getFail() + "处。");
+                    resultArea.paintImmediately(resultArea.getBounds());
                     picturePanel.revalidate();
-                    picturePanel.setLayout(new GridLayout(10, 1));
+                    picturePanel.setLayout(new GridLayout(allPicture.size(), 1));
                     return;
                 }
             }
         });
 
-
-//        File file = new File(tempImage);
-//        ITesseract instance = new Tesseract();
-//        instance.setDatapath("D:\\code\\pictureOCRV1\\src\\main\\resources\\data\\");
-//        instance.setLanguage(language);
-//        Thread thread = new Thread(() -> {
-//            String result = null;
-//            try {
-//                result = instance.doOCR(file);
-//            } catch (Exception e) {
-//                e.printStackTrace();
-//            }
-//            resultArea.setText(result);
-//        });
-        ProgressBar.show(this, thread, "文档处理中，请稍后...", "执行结束", "取消");
+        ProgressBar.show(this, thread, "文档处理中，请稍后...",
+                "执行结束, 其中有" + resDTO.getFail() + "处过期。", "取消");
     }
 
 

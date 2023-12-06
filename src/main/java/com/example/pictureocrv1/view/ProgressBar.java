@@ -106,26 +106,22 @@ public class ProgressBar implements ActionListener {
      * 启动线程，测试进度条
      */
     private void startThread() {
-        new Thread() {
-
-            public void run() {
-                try {
-                    thread.start(); // 处理耗时任务
-                    // 等待事务处理线程结束
-                    thread.join();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                } finally {
-                    // 关闭进度提示框
-                    dialog.dispose();
-                    if (resultInfo != null && !resultInfo.trim().isEmpty()) {
-                        String title = "消息";
-                        JOptionPane.showMessageDialog(parent, resultInfo, title, JOptionPane.INFORMATION_MESSAGE);
-                    }
+        new Thread(() -> {
+            try {
+                thread.start(); // 处理耗时任务
+                // 等待事务处理线程结束
+                thread.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } finally {
+                // 关闭进度提示框
+                dialog.dispose();
+                if (resultInfo != null && !resultInfo.trim().isEmpty()) {
+                    String title = "消息";
+                    JOptionPane.showMessageDialog(parent, resultInfo, title, JOptionPane.INFORMATION_MESSAGE);
                 }
             }
-
-        }.start();
+        }).start();
 
     }
 
