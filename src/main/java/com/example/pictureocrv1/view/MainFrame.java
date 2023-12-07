@@ -1,12 +1,17 @@
 package com.example.pictureocrv1.view;
 
 import com.example.pictureocrv1.DealDocument;
+import com.example.pictureocrv1.ImageExtractor;
 import com.example.pictureocrv1.dto.OutputDTO;
 import com.example.pictureocrv1.dto.ResDTO;
 import com.example.pictureocrv1.utils.IdCardOcrUtils;
 import com.lijinjiang.beautyeye.ch3_button.BEButtonUI;
 import org.apache.logging.log4j.util.Strings;
 import org.apache.poi.xwpf.usermodel.XWPFPicture;
+import org.docx4j.Docx4J;
+import org.docx4j.openpackaging.exceptions.Docx4JException;
+import org.docx4j.openpackaging.packages.WordprocessingMLPackage;
+import org.docx4j.wml.P;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -71,7 +76,13 @@ public class MainFrame extends JFrame {
         JButton openBtn = new JButton("打开");
         openBtn.setFocusable(false);
         openBtn.setUI(new BEButtonUI().setNormalColor(BEButtonUI.NormalColor.green));
-        openBtn.addActionListener(e -> showChooseFileDialog());
+        openBtn.addActionListener(e -> {
+            try {
+                showChooseFileDialog();
+            } catch (Docx4JException ex) {
+                throw new RuntimeException(ex);
+            }
+        });
 
         // 截图按钮
         JButton screenshotBtn = new JButton("截图");
@@ -148,25 +159,32 @@ public class MainFrame extends JFrame {
 
     // 选择需要识别的图片
     // 支持：TIFF、JPEG、GIF、PNG和BMP图像格式
-    private void showChooseFileDialog() {
+    private void showChooseFileDialog() throws Docx4JException {
         JFileChooser fileChooser = getjFileChooser();
         int result = fileChooser.showOpenDialog(this);
         if (result == JFileChooser.APPROVE_OPTION) {
             File selectedFile = fileChooser.getSelectedFile();
             filePath = selectedFile.getAbsolutePath();
+            File file = new File(filePath);
 
             String[] fileTypeArray = filePath.split("\\.");
             String fileType = fileTypeArray[fileTypeArray.length - 1];
 
-            if (fileType.equalsIgnoreCase(FileType.DOCX.getName())) {
-                File file = new File(filePath);
-                try (InputStream inputStream = Files.newInputStream(file.toPath())) {
-                    byte[] buffer = new byte[(int) file.length()];
-                    while (inputStream.read(buffer, 0, buffer.length) != -1) {
-                    }
+            try (InputStream inputStream = Files.newInputStream(file.toPath())) {
+                byte[] buffer = new byte[(int) file.length()];
+                while (inputStream.read(buffer, 0, buffer.length) != -1) {
+                }
+                if (fileType.equalsIgnoreCase(FileType.DOCX.getName())) {
+
+                    // docx4j
+                    WordprocessingMLPackage wordMlPackage = Docx4J.load(file);
+                    List<Object> paragraphs = wordMlPackage.getMainDocumentPart().getContent();
 
                     // 这里的buffer就是包含了文件内容的字节数组
                     allPicture = DealDocument.getAllPicture(buffer);
+
+                    int res = DealDocument.getTotalPage(buffer);
+                    System.out.println(res);
 
                     resultArea.append("文档中图片总个数： " + allPicture.size() + "\n");
                     resultArea.paintImmediately(resultArea.getBounds());
@@ -194,9 +212,13 @@ public class MainFrame extends JFrame {
                         }
                     }
                     return;
-                } catch (IOException e) {
-                    e.printStackTrace();
+
+                } else if (fileType.equalsIgnoreCase(FileType.PDF.getName())) {
+//                    ImageExtractor.extractImagesAndGetPageNumbers(file);
                 }
+
+            } catch (IOException e) {
+                e.printStackTrace();
             }
 
 
@@ -229,7 +251,7 @@ public class MainFrame extends JFrame {
         fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY); // 可选文件夹和文件
         fileChooser.setMultiSelectionEnabled(false); // 设置可多选
         fileChooser.removeChoosableFileFilter(fileChooser.getAcceptAllFileFilter()); // 不显示所有文件的下拉选
-        fileChooser.addChoosableFileFilter(new FileNameExtensionFilter("文件", "TIFF", "JPG", "GIF", "PNG", "BMP", "DOCX"));
+        fileChooser.addChoosableFileFilter(new FileNameExtensionFilter("文件", "TIFF", "JPG", "GIF", "PNG", "BMP", "DOCX", "PDF"));
 
         return fileChooser;
     }

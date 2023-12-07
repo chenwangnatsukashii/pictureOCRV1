@@ -5,7 +5,7 @@ import lombok.Setter;
 
 @Getter
 public enum FileType {
-    JPG("jpg"), PNG("png"), DOCX("docx");
+    JPG("jpg"), PNG("png"), DOCX("docx"), PDF("pdf");
 
     FileType(String name) {
         this.name = name;
