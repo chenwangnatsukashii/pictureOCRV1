@@ -2,12 +2,6 @@ package com.example.pictureocrv1;
 
 import com.example.pictureocrv1.view.MainFrame;
 import com.lijinjiang.beautyeye.BeautyEyeLNFHelper;
-import net.sourceforge.tess4j.ITesseract;
-import net.sourceforge.tess4j.Tesseract;
-import net.sourceforge.tess4j.TesseractException;
-import net.sourceforge.tess4j.util.LoadLibs;
-
-import java.io.File;
 
 public class MainTest {
 
@@ -26,33 +20,7 @@ public class MainTest {
             new MainFrame();
         } catch (Exception e) {
             e.printStackTrace();
-            System.out.println(e.getMessage());
         }
     }
-
-//    public static void main(String[] args) {
-//
-//        File tmpFolder = LoadLibs.extractTessResources("win32-x86-64");
-//
-//        System.setProperty("java.library.path", tmpFolder.getPath());
-//
-//
-//        String projectPath = System.getProperty("user.dir");
-//        System.out.println(projectPath);
-//
-//        String imagePath = "src/main/resources/image/WechatIMG147.jpg";
-//        File imageFile = new File(projectPath, imagePath);
-//        System.out.println(imageFile.exists());
-//
-//        ITesseract instance = new Tesseract();
-//        instance.setDatapath("D:\\code\\pictureOCRV1\\src\\main\\resourcesD:\\code\\pictureOCRV1\\src\\main\\resources\\");
-//        instance.setLanguage("chi_sim");
-//        try {
-//            String result = instance.doOCR(imageFile);
-//            System.out.println(result);
-//        } catch (TesseractException e) {
-//            System.err.println(e.getMessage());
-//        }
-//    }
 
 }

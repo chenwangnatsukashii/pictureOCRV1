@@ -51,10 +51,7 @@ public class DealDocument {
     public static int getTotalPage(byte[] documentByte) throws IOException {
         InputStream inputStream = new ByteArrayInputStream(documentByte);
         XWPFDocument document = new XWPFDocument(inputStream);
-        int currentPage = document.getProperties().getExtendedProperties().getUnderlyingProperties().getPages();
-        System.out.println(currentPage);
-
-        return currentPage;
+        return document.getProperties().getExtendedProperties().getUnderlyingProperties().getPages();
     }
 
 

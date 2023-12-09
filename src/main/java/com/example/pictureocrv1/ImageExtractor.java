@@ -1,17 +1,15 @@
 package com.example.pictureocrv1;
 
-import com.itextpdf.io.image.ImageData;
-import com.itextpdf.kernel.geom.Rectangle;
-import com.itextpdf.kernel.pdf.*;
-import com.itextpdf.kernel.pdf.canvas.parser.*;
+import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.PdfPage;
+import com.itextpdf.kernel.pdf.PdfReader;
+import com.itextpdf.kernel.pdf.canvas.parser.EventType;
+import com.itextpdf.kernel.pdf.canvas.parser.PdfCanvasProcessor;
 import com.itextpdf.kernel.pdf.canvas.parser.data.IEventData;
+import com.itextpdf.kernel.pdf.canvas.parser.data.ImageRenderInfo;
 import com.itextpdf.kernel.pdf.canvas.parser.listener.IEventListener;
 
-import java.io.IOException;
-import java.util.List;
 import java.util.Set;
-
-import com.itextpdf.kernel.pdf.canvas.parser.data.ImageRenderInfo;
 
 public class ImageExtractor {
     public static void main(String[] args) {
@@ -29,7 +27,6 @@ public class ImageExtractor {
                 pageNum++;
             }
 
-
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -44,7 +41,6 @@ public class ImageExtractor {
                 System.out.println(imageData.length);
             }
         }
-
 
         @Override
         public Set<EventType> getSupportedEvents() {

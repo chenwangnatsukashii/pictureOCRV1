@@ -40,8 +40,6 @@ public class MainFrame extends JFrame {
     protected BufferedImage ocrImage;
     private String filePath;
     private String language = "chi_sim";
-    private final String tempImage = Objects.requireNonNull(MainFrame.class.getResource("/")).getPath() + "img/temp.jpg";
-
     private List<XWPFPicture> allPicture;
 
 
@@ -174,17 +172,11 @@ public class MainFrame extends JFrame {
                 byte[] buffer = new byte[(int) file.length()];
                 while (inputStream.read(buffer, 0, buffer.length) != -1) {
                 }
-                if (fileType.equalsIgnoreCase(FileType.DOCX.getName())) {
 
-                    // docx4j
-                    WordprocessingMLPackage wordMlPackage = Docx4J.load(file);
-                    List<Object> paragraphs = wordMlPackage.getMainDocumentPart().getContent();
+                if (fileType.equalsIgnoreCase(FileType.DOCX.getName())) {
 
                     // 这里的buffer就是包含了文件内容的字节数组
                     allPicture = DealDocument.getAllPicture(buffer);
-
-                    int res = DealDocument.getTotalPage(buffer);
-                    System.out.println(res);
 
                     resultArea.append("文档中图片总个数： " + allPicture.size() + "\n");
                     resultArea.paintImmediately(resultArea.getBounds());
@@ -338,6 +330,12 @@ public class MainFrame extends JFrame {
                 resultArea.append(info + "\n");
             }
         });
+    }
+
+    private void dealWithDocx4j(File file) throws Docx4JException {
+        // docx4j
+        WordprocessingMLPackage wordMlPackage = Docx4J.load(file);
+        List<Object> paragraphs = wordMlPackage.getMainDocumentPart().getContent();
     }
 
 
