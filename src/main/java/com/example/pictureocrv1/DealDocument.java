@@ -40,7 +40,6 @@ public class DealDocument {
                     }
                 }
             }
-            System.out.println("图片个数： " + pictures.size());
         } catch (IOException e) {
             e.printStackTrace();
         }

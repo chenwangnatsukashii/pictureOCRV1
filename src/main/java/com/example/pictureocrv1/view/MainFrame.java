@@ -3,7 +3,9 @@ package com.example.pictureocrv1.view;
 import com.example.pictureocrv1.DealDocument;
 import com.example.pictureocrv1.ImageExtractor;
 import com.example.pictureocrv1.dto.OutputDTO;
+import com.example.pictureocrv1.dto.PageOutputDTO;
 import com.example.pictureocrv1.dto.ResDTO;
+import com.example.pictureocrv1.service.HandlePdfService;
 import com.example.pictureocrv1.utils.IdCardOcrUtils;
 import com.lijinjiang.beautyeye.ch3_button.BEButtonUI;
 import org.apache.logging.log4j.util.Strings;
@@ -41,6 +43,9 @@ public class MainFrame extends JFrame {
     private String filePath;
     private String language = "chi_sim";
     private List<XWPFPicture> allPicture;
+    private List<PageOutputDTO> pageOutputDTOList;
+
+    private FileType inputFileType;
 
 
     public MainFrame() {
@@ -165,37 +170,23 @@ public class MainFrame extends JFrame {
             filePath = selectedFile.getAbsolutePath();
             File file = new File(filePath);
 
-            String[] fileTypeArray = filePath.split("\\.");
-            String fileType = fileTypeArray[fileTypeArray.length - 1];
+            inputFileType = FileType.getFileType(filePath);
 
             try (InputStream inputStream = Files.newInputStream(file.toPath())) {
                 byte[] buffer = new byte[(int) file.length()];
                 while (inputStream.read(buffer, 0, buffer.length) != -1) {
                 }
 
-                if (fileType.equalsIgnoreCase(FileType.DOCX.getName())) {
+                if (inputFileType == FileType.DOCX) {
 
-                    // 这里的buffer就是包含了文件内容的字节数组
                     allPicture = DealDocument.getAllPicture(buffer);
-
                     resultArea.append("文档中图片总个数： " + allPicture.size() + "\n");
                     resultArea.paintImmediately(resultArea.getBounds());
 
                     for (int i = 0; i < allPicture.size() - 1; i++) {
+
                         byte[] pictureBytes = allPicture.get(i).getPictureData().getData();
-
-                        ImageIcon icon = new ImageIcon(pictureBytes);
-
-                        int iconWidth = icon.getIconWidth();
-                        int iconHeight = icon.getIconHeight();
-
-                        if (iconWidth > 1000 || iconHeight > 1000) {
-                            Image newImage = icon.getImage().getScaledInstance((int) (iconWidth * 0.5), (int) (iconHeight * 0.5), Image.SCALE_DEFAULT);
-                            icon = new ImageIcon(newImage);
-                        }
-
-                        JLabel label = new JLabel(icon);
-                        picturePanel.add(label);
+                        addPicture2Panel(pictureBytes);
 
                         if (i == 10) {
                             picturePanel.revalidate();
@@ -203,21 +194,27 @@ public class MainFrame extends JFrame {
                             return;
                         }
                     }
-                    return;
+                } else if (inputFileType == FileType.PDF) {
+                    HandlePdfService handlePdfService = new HandlePdfService(filePath);
+                    pageOutputDTOList = handlePdfService.getAllPicture();
 
-                } else if (fileType.equalsIgnoreCase(FileType.PDF.getName())) {
-//                    ImageExtractor.extractImagesAndGetPageNumbers(file);
+                    for (int i = 0; i < pageOutputDTOList.size() - 1; i++) {
+                        List<byte[]> pictureBytesList = pageOutputDTOList.get(i).getImageDataList();
+
+                        pictureBytesList.forEach(this::addPicture2Panel);
+
+                        if (i == 10) {
+                            picturePanel.revalidate();
+                            picturePanel.setLayout(new GridLayout(i + 1, 1));
+                            return;
+                        }
+                    }
+
+                } else {
+                    ImageIcon imageIcon = new ImageIcon(filePath);
+                    previewLabel.setIcon(imageIcon);
+                    ocrImage = ImageIO.read(Files.newInputStream(Paths.get(filePath)));
                 }
-
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-
-            ImageIcon imageIcon = new ImageIcon(filePath);
-            previewLabel.setIcon(imageIcon);
-            try {
-                ocrImage = ImageIO.read(Files.newInputStream(Paths.get(filePath)));
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -275,6 +272,20 @@ public class MainFrame extends JFrame {
         previewLabel.setIcon(previewImage);
     }
 
+    private void addPicture2Panel(byte[] pictureByte) {
+        ImageIcon icon = new ImageIcon(pictureByte);
+
+        int iconWidth = icon.getIconWidth();
+        int iconHeight = icon.getIconHeight();
+        if (iconWidth > 1000 || iconHeight > 1000) {
+            Image newImage = icon.getImage().getScaledInstance((int) (iconWidth * 0.5), (int) (iconHeight * 0.5), Image.SCALE_DEFAULT);
+            icon = new ImageIcon(newImage);
+        }
+
+        JLabel label = new JLabel(icon);
+        picturePanel.add(label);
+    }
+
     // 执行OCR识别
     private void execute() {
         LocalDate todayDate = LocalDate.now();
@@ -284,6 +295,43 @@ public class MainFrame extends JFrame {
         resDTO.setTotal(new AtomicInteger());
         resDTO.setFail(new AtomicInteger());
         resDTO.setSuccess(new AtomicInteger());
+
+        Thread threadPdf = new Thread(() -> {
+            for (int i = 0; i < pageOutputDTOList.size(); i++) {
+                PageOutputDTO pageOutputDTO = pageOutputDTOList.get(i);
+                List<byte[]> pictureBytes = pageOutputDTO.getImageDataList();
+                if (pictureBytes.isEmpty()) {
+                    resultArea.append("第" + (i + 1) + "页：无需识别" + "\n");
+                    continue;
+                }
+
+                for (int j = 0; j < pictureBytes.size(); j++) {
+                    List<OutputDTO> outputDTOList = IdCardOcrUtils.getStringStringMap(pictureBytes.get(j));
+                    for (int k = 0; k < outputDTOList.size(); k++) {
+                        OutputDTO output = outputDTOList.get(k);
+
+                        if (output.isRecognizeFlag()) {
+                            resDTO.getTotal().incrementAndGet();
+                            if (output.isWarningFlag()) {
+                                resDTO.getFail().incrementAndGet();
+                            } else {
+                                resDTO.getSuccess().incrementAndGet();
+                            }
+                        }
+
+                        if (k == 0) {
+                            resultArea.append("第" + (i + 1) + "页, 第" + (j + 1) + "张：" +
+                                    output.getDetailInfo() + "\n");
+                        } else {
+                            resultArea.append(Strings.repeat(" ", 22) + output.getDetailInfo() + "\n");
+                        }
+                    }
+                }
+                if (printResult(resDTO, i)) return;
+            }
+
+        });
+
         Thread thread = new Thread(() -> {
             for (int i = 0; i < allPicture.size() - 1; i++) {
                 byte[] pictureBytes = allPicture.get(i).getPictureData().getData();
@@ -308,19 +356,23 @@ public class MainFrame extends JFrame {
                     }
                 }
 
-                if (i == 10) {
-                    resultArea.append("一共识别验证了：" + resDTO.getTotal() + "处有效时间, 其中未过期：" + resDTO.getSuccess() +
-                            "处，已过期：" + resDTO.getFail() + "处。");
-                    resultArea.paintImmediately(resultArea.getBounds());
-                    picturePanel.revalidate();
-                    picturePanel.setLayout(new GridLayout(allPicture.size(), 1));
-                    return;
-                }
+                if (printResult(resDTO, i)) return;
+
             }
         });
 
-        ProgressBar.show(this, thread, "文档处理中，请稍后...",
+        ProgressBar.show(this, threadPdf, "文档处理中，请稍后...",
                 "执行结束, 其中有" + resDTO.getFail() + "处过期。", "取消");
+    }
+
+    private boolean printResult(ResDTO resDTO, int i) {
+        if (i > 100) {
+            resultArea.append("一共识别验证了：" + resDTO.getTotal() + "处有效时间, 其中未过期：" + resDTO.getSuccess() +
+                    "处，已过期：" + resDTO.getFail() + "处。");
+            resultArea.paintImmediately(resultArea.getBounds());
+            return true;
+        }
+        return false;
     }
 
 
