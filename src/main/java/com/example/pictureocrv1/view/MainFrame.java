@@ -4,6 +4,7 @@ import com.example.pictureocrv1.DealDocument;
 import com.example.pictureocrv1.ImageExtractor;
 import com.example.pictureocrv1.dto.OutputDTO;
 import com.example.pictureocrv1.dto.PageOutputDTO;
+import com.example.pictureocrv1.dto.PictureDTO;
 import com.example.pictureocrv1.dto.ResDTO;
 import com.example.pictureocrv1.service.HandlePdfService;
 import com.example.pictureocrv1.utils.IdCardOcrUtils;
@@ -33,7 +34,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 
 public class MainFrame extends JFrame {
-    private JComboBox<String> languageCombobox;
+
     private Map<String, String> languageMap;
     private JSplitPane splitPane;
     private JPanel picturePanel;
@@ -44,7 +45,6 @@ public class MainFrame extends JFrame {
     private String language = "chi_sim";
     private List<XWPFPicture> allPicture;
     private List<PageOutputDTO> pageOutputDTOList;
-
     private FileType inputFileType;
 
 
@@ -72,8 +72,8 @@ public class MainFrame extends JFrame {
     private void createOperatePanel() {
         JPanel operatePanel = new JPanel();
         operatePanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        operatePanel.setPreferredSize(new Dimension(1240, 56)); // 主要是设置高度
-        operatePanel.setLayout(new GridLayout(1, 6, 10, 10));
+        operatePanel.setPreferredSize(new Dimension(1240, 112)); // 主要是设置高度
+        operatePanel.setLayout(new GridLayout(2, 4, 10, 10));
 
         // 打开按钮
         JButton openBtn = new JButton("打开");
@@ -96,7 +96,7 @@ public class MainFrame extends JFrame {
         });
 
         // 语言选择下拉框
-        languageCombobox = new JComboBox<>();
+        JComboBox<String> languageCombobox = new JComboBox<>();
         Set<String> keys = languageMap.keySet();
         for (String key : keys) {
             languageCombobox.addItem(key);
@@ -118,11 +118,18 @@ public class MainFrame extends JFrame {
         executeBtn.setUI(new BEButtonUI().setNormalColor(BEButtonUI.NormalColor.green));
         executeBtn.addActionListener(e -> execute());
 
+        // 执行识别按钮
+        JButton searchByNameBtn = new JButton("按姓名查找");
+        searchByNameBtn.setFocusable(false);
+        searchByNameBtn.setUI(new BEButtonUI().setNormalColor(BEButtonUI.NormalColor.lightBlue));
+        searchByNameBtn.addActionListener(e -> openSearchDialog());
+
         operatePanel.add(openBtn);
         operatePanel.add(screenshotBtn);
         operatePanel.add(languageCombobox);
         operatePanel.add(processBtn);
         operatePanel.add(executeBtn);
+        operatePanel.add(searchByNameBtn);
         this.add(operatePanel, BorderLayout.NORTH);
     }
 
@@ -199,9 +206,9 @@ public class MainFrame extends JFrame {
                     pageOutputDTOList = handlePdfService.getAllPicture();
 
                     for (int i = 0; i < pageOutputDTOList.size() - 1; i++) {
-                        List<byte[]> pictureBytesList = pageOutputDTOList.get(i).getImageDataList();
+                        List<PictureDTO> pictureDTOList = pageOutputDTOList.get(i).getPictureDTOList();
 
-                        pictureBytesList.forEach(this::addPicture2Panel);
+                        pictureDTOList.forEach(pictureDTO -> addPicture2Panel(pictureDTO.getImageData()));
 
                         if (i == 10) {
                             picturePanel.revalidate();
@@ -296,19 +303,21 @@ public class MainFrame extends JFrame {
         resDTO.setFail(new AtomicInteger());
         resDTO.setSuccess(new AtomicInteger());
 
-        Thread threadPdf = new Thread(() -> {
-            for (int i = 0; i < pageOutputDTOList.size(); i++) {
-                PageOutputDTO pageOutputDTO = pageOutputDTOList.get(i);
-                List<byte[]> pictureBytes = pageOutputDTO.getImageDataList();
-                if (pictureBytes.isEmpty()) {
-                    resultArea.append("第" + (i + 1) + "页：无需识别" + "\n");
-                    continue;
-                }
+        Thread thread = null;
 
-                for (int j = 0; j < pictureBytes.size(); j++) {
-                    List<OutputDTO> outputDTOList = IdCardOcrUtils.getStringStringMap(pictureBytes.get(j));
-                    for (int k = 0; k < outputDTOList.size(); k++) {
-                        OutputDTO output = outputDTOList.get(k);
+        if (inputFileType == FileType.DOCX) {
+
+            thread = new Thread(() -> {
+                for (int i = 0; i < allPicture.size() - 1; i++) {
+                    byte[] pictureBytes = allPicture.get(i).getPictureData().getData();
+
+                    PictureDTO pictureDTO = new PictureDTO();
+                    pictureDTO.setImageData(pictureBytes);
+                    IdCardOcrUtils.getStringStringMap(pictureDTO);
+
+                    List<OutputDTO> outputDTOList = pictureDTO.getOutputDTOList();
+                    for (int j = 0; j < outputDTOList.size(); j++) {
+                        OutputDTO output = outputDTOList.get(j);
 
                         if (output.isRecognizeFlag()) {
                             resDTO.getTotal().incrementAndGet();
@@ -319,49 +328,58 @@ public class MainFrame extends JFrame {
                             }
                         }
 
-                        if (k == 0) {
-                            resultArea.append("第" + (i + 1) + "页, 第" + (j + 1) + "张：" +
-                                    output.getDetailInfo() + "\n");
+                        if (j == 0) {
+                            resultArea.append("第" + (i + 1) + "张图片：" + output.getDetailInfo() + "\n");
                         } else {
                             resultArea.append(Strings.repeat(" ", 22) + output.getDetailInfo() + "\n");
                         }
                     }
+                    if (printResult(resDTO, i)) return;
                 }
-                if (printResult(resDTO, i)) return;
-            }
+            });
 
-        });
+        } else if (inputFileType == FileType.PDF) {
+            thread = new Thread(() -> {
+                for (int i = 0; i < pageOutputDTOList.size(); i++) {
+                    PageOutputDTO pageOutputDTO = pageOutputDTOList.get(i);
+                    List<PictureDTO> pictureDTOList = pageOutputDTO.getPictureDTOList();
+                    if (pictureDTOList.isEmpty()) {
+                        resultArea.append("第" + (i + 1) + "页：无需识别" + "\n");
+                        continue;
+                    }
 
-        Thread thread = new Thread(() -> {
-            for (int i = 0; i < allPicture.size() - 1; i++) {
-                byte[] pictureBytes = allPicture.get(i).getPictureData().getData();
+                    for (int j = 0; j < pictureDTOList.size(); j++) {
+                        PictureDTO pictureDTO = pictureDTOList.get(j);
+                        IdCardOcrUtils.getStringStringMap(pictureDTO);
 
-                List<OutputDTO> outputDTOList = IdCardOcrUtils.getStringStringMap(pictureBytes);
-                for (int j = 0; j < outputDTOList.size(); j++) {
-                    OutputDTO output = outputDTOList.get(j);
+                        List<OutputDTO> outputDTOList = pictureDTO.getOutputDTOList();
+                        for (int k = 0; k < outputDTOList.size(); k++) {
+                            OutputDTO output = outputDTOList.get(k);
 
-                    if (output.isRecognizeFlag()) {
-                        resDTO.getTotal().incrementAndGet();
-                        if (output.isWarningFlag()) {
-                            resDTO.getFail().incrementAndGet();
-                        } else {
-                            resDTO.getSuccess().incrementAndGet();
+                            if (output.isRecognizeFlag()) {
+                                resDTO.getTotal().incrementAndGet();
+                                if (output.isWarningFlag()) {
+                                    resDTO.getFail().incrementAndGet();
+                                } else {
+                                    resDTO.getSuccess().incrementAndGet();
+                                }
+                            }
+
+                            if (k == 0) {
+                                resultArea.append("第" + (i + 1) + "页, 第" + (j + 1) + "张：" +
+                                        output.getDetailInfo() + "\n");
+                            } else {
+                                resultArea.append(Strings.repeat(" ", 22) + output.getDetailInfo() + "\n");
+                            }
                         }
                     }
-
-                    if (j == 0) {
-                        resultArea.append("第" + (i + 1) + "张图片：" + output.getDetailInfo() + "\n");
-                    } else {
-                        resultArea.append(Strings.repeat(" ", 18) + output.getDetailInfo() + "\n");
-                    }
+                    if (printResult(resDTO, i)) return;
                 }
 
-                if (printResult(resDTO, i)) return;
+            });
+        }
 
-            }
-        });
-
-        ProgressBar.show(this, threadPdf, "文档处理中，请稍后...",
+        ProgressBar.show(this, thread, "文档处理中，请稍后...",
                 "执行结束, 其中有" + resDTO.getFail() + "处过期。", "取消");
     }
 
@@ -375,6 +393,12 @@ public class MainFrame extends JFrame {
         return false;
     }
 
+    private void openSearchDialog() {
+        String input = JOptionPane.showInputDialog(null, "请输入所需内容");
+        if (input == null) return;
+
+        System.out.println(input);
+    }
 
     public void appendJTextArea(String info) {
         SwingUtilities.invokeLater(() -> {

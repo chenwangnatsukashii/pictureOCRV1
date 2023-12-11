@@ -1,6 +1,7 @@
 package com.example.pictureocrv1.utils;
 
 import com.example.pictureocrv1.dto.OutputDTO;
+import com.example.pictureocrv1.dto.PictureDTO;
 import org.apache.poi.util.StringUtil;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -26,9 +27,9 @@ public class IdCardOcrUtils {
     private IdCardOcrUtils() {
     }
 
-    public static List<OutputDTO> getStringStringMap(byte[] bytes) {
+    public static void getStringStringMap(PictureDTO pictureDTO) {
         try {
-            List<Map> resMap = getResult(bytes);
+            List<Map> resMap = getResult(pictureDTO.getImageData());
 
             String text;
             StringBuilder result = new StringBuilder();
@@ -38,10 +39,11 @@ public class IdCardOcrUtils {
             }
             String appendText = result.toString().trim();
 
-            return getDetailInfo(appendText);
+            pictureDTO.setPictureInfo(appendText);
+            pictureDTO.setOutputDTOList(getDetailInfo(appendText));
+
         } catch (RestClientException e) {
             e.printStackTrace();
-            return null;
         }
     }
 
@@ -287,19 +289,6 @@ public class IdCardOcrUtils {
             }
         }
         return youXiaoQiXian;
-    }
-
-    public static void main(String[] args) {
-        String[] testAll = new String[]{"级建造师受人力资源和社会保障部住房和城乡建设部委托，本证书由四川省人力资源和社会保障厅四川省住房和城乡姓　名：尹航建设厅批准颁发，它表明持证人通过四证件号码：542622199407300216川省统一组织的考试，取得二级建造师性别：男执业资格出生年月：1994年07月专业：市政公用工程力资源和水批准日期：2019年05月26日A★★管理号：201905988510008503专业技术人员资格专业技术人员资格选书专用套人力资源和社会保障厅住房和城乡建设厅",
-                "使用有效期：2022年05月10日2024年09月17日中华人民共和国二级建造师注册证书姓名：尹航性别：男出生日期：1994-07-30注册编号：川2512019202101082聘用企业：四川省蜀通建设集团有限责任公司注册专业：市政公用工程（有效期：2021-09-18至2024-09-17)四房和省建住房源城乡建设厅个人签名：王签发日期2021年9月18日请登录“四川建设发布”微信公众号扫一扫查询签名日期：/20..10",
-                "建筑施工企业项目负责人安全生产考核合格证书编号：川建安B（2021）1052428姓名：尹航性别：男出生年月：1994年07月30日企业名称：四川省蜀通建设集团有限责任公司职务：项目负责人（项目经理）初次领证日期：2021年04月24日有效期：2023年08月17日至2024年04月23日省建发证机关：彩建设厅发证日期：200年8月中华人民共和国住房和城乡建设部监制",
-                "姓名尹航性别男民族汉出生1994年7月30日住址成都市天府新区华阳天府大道南段846号附12号公民身份号码542622199407300216",
-                "中华人民共和国居民身份证签发机关成都市公安局天府新区分局有效期限2018.10.23-2028.10.23",
-                "普通高等学校毕业证书学生尹航性别男，一九九四年七月三十日生，于二〇一二年九月至二O一七年六月在本校给排水科学与工程专业四年制本科学习，修完教学计划规定的全部课程，成绩合格，准予毕业。康实学校武汉大学校长：印贤二0一七年六月三十日证书编号：104861201705004788中华人民共和国教育部学历证书查询网址：http://www.chsi.com.cn武汉大学监制"};
-
-        for (String s : testAll) {
-            getDetailInfo(s);
-        }
     }
 
     public static List<OutputDTO> getDetailInfo(String s) {

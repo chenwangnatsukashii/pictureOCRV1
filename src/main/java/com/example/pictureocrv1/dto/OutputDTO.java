@@ -11,7 +11,6 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class OutputDTO implements Serializable {
-
     private String detailInfo;
     private boolean warningFlag;
     private boolean recognizeFlag;

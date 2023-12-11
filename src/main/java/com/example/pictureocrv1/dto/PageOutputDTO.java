@@ -7,5 +7,5 @@ import java.util.List;
 @Data
 public class PageOutputDTO {
     private int pageNum;
-    private List<byte[]> imageDataList;
+    private List<PictureDTO> pictureDTOList;
 }

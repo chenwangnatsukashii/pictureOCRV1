@@ -2,6 +2,7 @@ package com.example.pictureocrv1.service;
 
 import com.example.pictureocrv1.dto.OutputDTO;
 import com.example.pictureocrv1.dto.PageOutputDTO;
+import com.example.pictureocrv1.dto.PictureDTO;
 import com.example.pictureocrv1.utils.IdCardOcrUtils;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfPage;
@@ -39,7 +40,7 @@ public class HandlePdfService extends HandleFile {
 
         for (int i = 1; i <= totalNum; i++) {
             pageOutputDTO = new PageOutputDTO();
-            pageOutputDTO.setImageDataList(new ArrayList<>());
+            pageOutputDTO.setPictureDTOList(new ArrayList<>());
 
             PdfPage page = pdfDoc.getPage(i);
             PdfCanvasProcessor processor = new PdfCanvasProcessor(new HandlePdfService.ImageEventListener());
@@ -60,7 +61,9 @@ public class HandlePdfService extends HandleFile {
             if (type == EventType.RENDER_IMAGE) {
                 ImageRenderInfo renderInfo = (ImageRenderInfo) data;
                 byte[] imageData = renderInfo.getImage().getImageBytes();
-                pageOutputDTO.getImageDataList().add(imageData);
+                PictureDTO pictureDTO = new PictureDTO();
+                pictureDTO.setImageData(imageData);
+                pageOutputDTO.getPictureDTOList().add(pictureDTO);
             }
         }
 
