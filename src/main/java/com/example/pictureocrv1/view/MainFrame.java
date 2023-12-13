@@ -397,7 +397,22 @@ public class MainFrame extends JFrame {
         String input = JOptionPane.showInputDialog(null, "请输入所需内容");
         if (input == null) return;
 
-        System.out.println(input);
+        picturePanel.removeAll();
+        String inputTrim = input.trim();
+        int total = 0;
+        for (PageOutputDTO pageOutputDTO : pageOutputDTOList) {
+            List<PictureDTO> pictureDTOList = pageOutputDTO.getPictureDTOList();
+            for (PictureDTO pictureDTO : pictureDTOList) {
+                if (pictureDTO.getPictureInfo().contains(inputTrim)) {
+                    addPicture2Panel(pictureDTO.getImageData());
+                    total++;
+                }
+            }
+        }
+
+        picturePanel.revalidate();
+        picturePanel.setLayout(new GridLayout(total + 1, 1));
+        picturePanel.repaint();
     }
 
     public void appendJTextArea(String info) {
