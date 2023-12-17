@@ -2,24 +2,25 @@ package com.example.pictureocrv1.utils;
 
 import com.example.pictureocrv1.dto.OutputDTO;
 import com.example.pictureocrv1.dto.PictureDTO;
-import org.apache.poi.util.StringUtil;
+import com.example.pictureocrv1.ocr.OcrEntry;
+import com.example.pictureocrv1.ocr.OcrProperties;
+import com.example.pictureocrv1.service.OcrService;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 
 import java.time.LocalDate;
 import java.time.Period;
-import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
-import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 
+import javax.annotation.Resource;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -29,7 +30,10 @@ public class IdCardOcrUtils {
 
     public static void getStringStringMap(PictureDTO pictureDTO) {
         try {
-            List<Map> resMap = getResult(pictureDTO.getImageData());
+            List<Map> resMap = null;
+
+            OcrService ocrService = new OcrService(new OcrProperties());
+            OcrEntry[] ocrEntries = ocrService.ocr(ToFile.changeByteToFile(pictureDTO.getImageData(), "123.jpg").toURI().getPath().replaceFirst("/", ""));
 
             String text;
             StringBuilder result = new StringBuilder();

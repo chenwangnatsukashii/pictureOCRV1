@@ -20,8 +20,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Optional;
 
-import static com.example.pictureocrv1.utils.toFile.deleteTempFile;
-import static com.example.pictureocrv1.utils.toFile.multipartFiletoFile;
+import static com.example.pictureocrv1.utils.ToFile.deleteTempFile;
+import static com.example.pictureocrv1.utils.ToFile.multipartFiletoFile;
 
 
 /**

@@ -4,10 +4,11 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.*;
 import java.nio.file.Files;
+import java.util.Objects;
 import java.util.Optional;
 
 
-public class toFile {
+public class ToFile {
 
     /**
      * MultipartFile转File
@@ -23,14 +24,35 @@ public class toFile {
             if (!new File(filePath).exists()) {
                 new File(filePath).mkdirs();
             }
-            InputStream inputStream = file.getInputStream();
-            String fileFullName = file.getOriginalFilename();
-            String fileName = fileFullName.substring(0, fileFullName.lastIndexOf("."));
-            String prefix = fileFullName.substring(fileFullName.lastIndexOf("."));
-            toFile = new File(filePath + fileName + "_" + System.currentTimeMillis() + prefix);
-            inputStreamToFile(inputStream, toFile);
-            inputStream.close();
+            try (InputStream inputStream = file.getInputStream()) {
+                toFile = new File(filePath + getTempName(Objects.requireNonNull(file.getOriginalFilename())));
+                inputStreamToFile(inputStream, toFile);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
+        return toFile;
+    }
+
+    private static String getTempName(String fileFullName) {
+        String fileName = fileFullName.substring(0, fileFullName.lastIndexOf("."));
+        String prefix = fileFullName.substring(fileFullName.lastIndexOf("."));
+        return fileName + "_" + System.currentTimeMillis() + prefix;
+    }
+
+    public static File changeByteToFile(byte[] imageByte, String originalFileName) {
+        String filePath = "/tmp/img";
+        if (!new File(filePath).exists()) {
+            new File(filePath).mkdirs();
+        }
+        File toFile = new File(filePath + getTempName(Objects.requireNonNull(originalFileName)));
+
+        try (FileOutputStream fos = new FileOutputStream(toFile)) {
+            fos.write(imageByte); // 将字节数组写入文件
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
         return toFile;
     }
 

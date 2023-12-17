@@ -7,6 +7,7 @@ import com.example.pictureocrv1.dto.PageOutputDTO;
 import com.example.pictureocrv1.dto.PictureDTO;
 import com.example.pictureocrv1.dto.ResDTO;
 import com.example.pictureocrv1.service.HandlePdfService;
+import com.example.pictureocrv1.service.OcrService;
 import com.example.pictureocrv1.utils.IdCardOcrUtils;
 import com.lijinjiang.beautyeye.ch3_button.BEButtonUI;
 import org.apache.logging.log4j.util.Strings;
@@ -16,6 +17,7 @@ import org.docx4j.openpackaging.exceptions.Docx4JException;
 import org.docx4j.openpackaging.packages.WordprocessingMLPackage;
 import org.docx4j.wml.P;
 
+import javax.annotation.Resource;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;

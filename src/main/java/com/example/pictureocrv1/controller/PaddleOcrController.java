@@ -1,4 +1,4 @@
-package com.example.pictureocrv1.paddleOCRV1;
+package com.example.pictureocrv1.controller;
 
 import com.example.pictureocrv1.DealDocument;
 import com.example.pictureocrv1.dto.OutputDTO;
