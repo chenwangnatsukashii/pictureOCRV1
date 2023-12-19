@@ -1,27 +1,22 @@
 package com.example.pictureocrv1.view;
 
 import com.example.pictureocrv1.DealDocument;
-import com.example.pictureocrv1.ImageExtractor;
 import com.example.pictureocrv1.dto.OutputDTO;
 import com.example.pictureocrv1.dto.PageOutputDTO;
 import com.example.pictureocrv1.dto.PictureDTO;
 import com.example.pictureocrv1.dto.ResDTO;
-import com.example.pictureocrv1.ocr.OcrCPP;
+import com.example.pictureocrv1.ocr.OcrProperties;
 import com.example.pictureocrv1.service.HandlePdfService;
 import com.example.pictureocrv1.service.OcrService;
 import com.example.pictureocrv1.utils.IdCardOcrUtils;
-import com.example.pictureocrv1.utils.ModelUrlUtils;
 import com.lijinjiang.beautyeye.ch3_button.BEButtonUI;
-import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.util.Strings;
 import org.apache.poi.xwpf.usermodel.XWPFPicture;
 import org.docx4j.Docx4J;
 import org.docx4j.openpackaging.exceptions.Docx4JException;
 import org.docx4j.openpackaging.packages.WordprocessingMLPackage;
-import org.docx4j.wml.P;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.Resource;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -37,6 +32,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+
 @Component
 public class MainFrame extends JFrame {
 
@@ -51,6 +47,8 @@ public class MainFrame extends JFrame {
     private List<XWPFPicture> allPicture;
     private List<PageOutputDTO> pageOutputDTOList;
     private FileType inputFileType;
+
+    private OcrService ocrService;
 
     public MainFrame() {
         this.setTitle("文档图片检测");
@@ -207,14 +205,8 @@ public class MainFrame extends JFrame {
                     }
                 } else if (inputFileType == FileType.PDF) {
 
-                        Map<String, Object> arguments = new HashMap<>();
-//        arguments.put("use_angle_cls", true);
-                        try {
-                            OcrCPP ocrCPP = new OcrCPP(new File(ModelUrlUtils.getRealUrl("/Paddle_CPP/PaddleOCR_json.exe").replaceFirst("file:/", "")), arguments);
-                            System.out.println(ocrCPP);
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
+                    ocrService = new OcrService(new OcrProperties());
+                    ocrService.init();
 
                     HandlePdfService handlePdfService = new HandlePdfService(filePath);
                     pageOutputDTOList = handlePdfService.getAllPicture();
@@ -327,7 +319,7 @@ public class MainFrame extends JFrame {
 
                     PictureDTO pictureDTO = new PictureDTO();
                     pictureDTO.setImageData(pictureBytes);
-                    IdCardOcrUtils.getStringStringMap(pictureDTO);
+                    IdCardOcrUtils.getStringStringMap(pictureDTO, ocrService);
 
                     List<OutputDTO> outputDTOList = pictureDTO.getOutputDTOList();
                     for (int j = 0; j < outputDTOList.size(); j++) {
@@ -364,7 +356,7 @@ public class MainFrame extends JFrame {
 
                     for (int j = 0; j < pictureDTOList.size(); j++) {
                         PictureDTO pictureDTO = pictureDTOList.get(j);
-                        IdCardOcrUtils.getStringStringMap(pictureDTO);
+                        IdCardOcrUtils.getStringStringMap(pictureDTO, ocrService);
 
                         List<OutputDTO> outputDTOList = pictureDTO.getOutputDTOList();
                         for (int k = 0; k < outputDTOList.size(); k++) {

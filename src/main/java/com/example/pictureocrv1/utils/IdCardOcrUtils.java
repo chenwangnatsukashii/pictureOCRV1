@@ -20,7 +20,6 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 
-import javax.annotation.Resource;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -28,17 +27,14 @@ public class IdCardOcrUtils {
     private IdCardOcrUtils() {
     }
 
-    public static void getStringStringMap(PictureDTO pictureDTO) {
+    public static void getStringStringMap(PictureDTO pictureDTO, OcrService ocrService) {
         try {
-            List<Map> resMap = null;
-
-            OcrService ocrService = new OcrService(new OcrProperties());
-            OcrEntry[] ocrEntries = ocrService.ocr(ToFile.changeByteToFile(pictureDTO.getImageData(), "123.jpg").toURI().getPath().replaceFirst("/", ""));
 
             String text;
             StringBuilder result = new StringBuilder();
-            for (Map map : resMap) {
-                text = map.get("text").toString().trim().replace(" ", "");
+            OcrEntry[] ocrEntries = ocrService.ocr(ToFile.changeByteToFile(pictureDTO.getImageData(), "123.jpg").toURI().getPath().replaceFirst("/", ""));
+            for (OcrEntry ocrEntry : ocrEntries) {
+                text = ocrEntry.getText().trim().replace(" ", "");
                 result.append(text);
             }
             String appendText = result.toString().trim();
@@ -51,7 +47,7 @@ public class IdCardOcrUtils {
         }
     }
 
-
+    @Deprecated
     private static List<Map> getResult(byte[] bytes) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);

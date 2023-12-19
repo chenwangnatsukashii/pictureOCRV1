@@ -1,7 +1,6 @@
 package com.example.pictureocrv1.controller;
 
 import com.example.pictureocrv1.DealDocument;
-import com.example.pictureocrv1.dto.OutputDTO;
 import com.example.pictureocrv1.dto.PictureDTO;
 import com.example.pictureocrv1.utils.IdCardOcrUtils;
 import org.apache.poi.xwpf.usermodel.XWPFPicture;
@@ -13,7 +12,6 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 @RestController
 public class PaddleOcrController {
@@ -28,7 +26,7 @@ public class PaddleOcrController {
                 PictureDTO pictureDTO = new PictureDTO();
                 pictureDTO.setImageData(pictureBytes);
                 pictureDTOList.add(pictureDTO);
-                IdCardOcrUtils.getStringStringMap(pictureDTO);
+                IdCardOcrUtils.getStringStringMap(pictureDTO, null);
             });
         } catch (IOException e) {
             e.printStackTrace();

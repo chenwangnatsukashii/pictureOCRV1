@@ -180,9 +180,9 @@ public class ImageUtils {
         g.setStroke(new BasicStroke(stroke));
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         for (OcrEntry ocrEntry : ocrEntries) {
-            String className = ocrEntry.text;
-            double probability = ocrEntry.score;
-            int[][] box = ocrEntry.box;
+            String className = ocrEntry.getText();
+            double probability = ocrEntry.getScore();
+            int[][] box = ocrEntry.getBox();
             Color color = colorMap.get(Math.abs(className.hashCode() % 6));
             g.setPaint(color);
             int x = box[0][0];

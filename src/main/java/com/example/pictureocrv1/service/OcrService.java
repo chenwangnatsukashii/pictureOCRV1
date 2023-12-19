@@ -29,7 +29,7 @@ public class OcrService {
      * 初始化加载ocr模型
      */
     @PostConstruct
-    private void init() {
+    public void init() {
         System.out.println("加载Ocr执行文件...");
         loadOcrExe();
     }

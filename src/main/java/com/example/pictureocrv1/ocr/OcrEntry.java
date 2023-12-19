@@ -1,12 +1,15 @@
 package com.example.pictureocrv1.ocr;
 
+import lombok.Data;
+
 import java.util.Arrays;
 
+@Data
 public class OcrEntry {
 
-    public String text;
-    public int[][] box;
-    public double score;
+    private String text;
+    private int[][] box;
+    private double score;
 
     @Override
     public String toString() {
