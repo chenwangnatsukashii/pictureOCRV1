@@ -3,7 +3,6 @@ target/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
-src/main/resources/Paddle_CPP/
 
 ### STS ###
 .apt_generated
@@ -33,3 +32,4 @@ build/
 ### VS Code ###
 .vscode/
 
+/out/artifacts/pictureOCRV1_jar/pictureOCRV1.jar
