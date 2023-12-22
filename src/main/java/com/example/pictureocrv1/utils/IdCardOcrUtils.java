@@ -5,6 +5,7 @@ import com.example.pictureocrv1.dto.PictureDTO;
 import com.example.pictureocrv1.ocr.OcrEntry;
 import com.example.pictureocrv1.ocr.OcrProperties;
 import com.example.pictureocrv1.service.OcrService;
+import lombok.experimental.UtilityClass;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -23,11 +24,11 @@ import org.springframework.web.client.RestTemplate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+@UtilityClass
 public class IdCardOcrUtils {
-    private IdCardOcrUtils() {
-    }
 
-    public static void getStringStringMap(PictureDTO pictureDTO, OcrService ocrService) {
+
+    public void getStringStringMap(PictureDTO pictureDTO, OcrService ocrService) {
         try {
 
             String text;
@@ -47,23 +48,6 @@ public class IdCardOcrUtils {
         }
     }
 
-    @Deprecated
-    private static List<Map> getResult(byte[] bytes) {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-
-        MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
-        map.add("images", ImageToBase64(bytes));
-
-        HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(map, headers);
-        RestTemplate restTemplate = new RestTemplate();
-        Map json = restTemplate.postForEntity("http://127.0.0.1:8868/predict/ocr_system", request, Map.class).getBody();
-        List<List<Map>> jsons = (List<List<Map>>) json.get("results");
-        if (!jsons.isEmpty()) {
-            return jsons.get(0);
-        }
-        return new ArrayList<>();
-    }
 
     /**
      * 获取身份证姓名
@@ -71,7 +55,7 @@ public class IdCardOcrUtils {
      * @param maps 识别的结果集合
      * @return 姓名
      */
-    private static String predictName(List<Map> maps) {
+    private String predictName(List<Map> maps) {
         String name = "";
         for (Map map : maps) {
             String str = map.get("text").toString().trim().replace(" ", "");
@@ -94,7 +78,7 @@ public class IdCardOcrUtils {
      *               如：姓名韦小宝性别男民族汉出生1654年12月20日住址北京市东城区景山前街4号紫禁城敬事房公民身份证号码11204416541220243X
      * @return
      */
-    private static String fullName(String result) {
+    private String fullName(String result) {
         String name = "";
         if (result.contains("性") || result.contains("性别")) {
             String str = result.substring(0, result.lastIndexOf("性"));
@@ -114,7 +98,7 @@ public class IdCardOcrUtils {
      * @param maps 识别的结果集合
      * @return 民族信息
      */
-    private static String national(List<Map> maps) {
+    private String national(List<Map> maps) {
         String nation = "";
         for (Map map : maps) {
             String str = map.get("text").toString();
@@ -134,7 +118,7 @@ public class IdCardOcrUtils {
      * @param maps 识别的结果集合
      * @return 身份证地址信息
      */
-    private static String address(List<Map> maps) {
+    private String address(List<Map> maps) {
         String address;
         StringBuilder addressJoin = new StringBuilder();
         for (Map map : maps) {
@@ -161,7 +145,7 @@ public class IdCardOcrUtils {
      * @param maps ocr识别的内容列表
      * @return 身份证号码
      */
-    private static String cardNumber(List<Map> maps) {
+    private String cardNumber(List<Map> maps) {
         String cardNumber = "";
         for (Map map : maps) {
             String str = map.get("text").toString().trim().replace(" ", "");
@@ -192,7 +176,7 @@ public class IdCardOcrUtils {
      * @param cardNumber 身份证号码，二代身份证18位
      * @return 性别
      */
-    private static String sex(String cardNumber) {
+    private String sex(String cardNumber) {
         if (cardNumber.isEmpty()) {
             return "未知";
         }
@@ -211,7 +195,7 @@ public class IdCardOcrUtils {
      * @param cardNumber 二代身份证，18位
      * @return 出生日期
      */
-    private static String birthday(String cardNumber) {
+    private String birthday(String cardNumber) {
         if (cardNumber.isEmpty()) {
             return "未知";
         }
@@ -228,7 +212,7 @@ public class IdCardOcrUtils {
      * @param data 图片变成byte数组
      * @return 图片的base64为内容
      */
-    private static String ImageToBase64(byte[] data) {
+    private String ImageToBase64(byte[] data) {
         // 直接调用JDK内置的方法
         return Base64.getEncoder().encodeToString(data);
     }
@@ -240,7 +224,7 @@ public class IdCardOcrUtils {
      * @param maps ocr识别的内容列表
      * @return 身份证反面的签发机关
      */
-    private static String qianFaJiGuan(List<Map> maps) {
+    private String qianFaJiGuan(List<Map> maps) {
         String qianFaJiGuan = "";
         for (Map map : maps) {
             String str = map.get("text").toString().trim().replace(" ", "");
@@ -270,7 +254,7 @@ public class IdCardOcrUtils {
      * @param maps ocr识别的内容列表
      * @return 身份证的有效期
      */
-    private static String youXiaoQiXian(List<Map> maps) {
+    private String youXiaoQiXian(List<Map> maps) {
         String youXiaoQiXian = "";
         for (Map map : maps) {
             String str = map.get("text").toString().trim().replace(" ", "");
@@ -291,7 +275,7 @@ public class IdCardOcrUtils {
         return youXiaoQiXian;
     }
 
-    public static List<OutputDTO> getDetailInfo(String s) {
+    public List<OutputDTO> getDetailInfo(String s) {
         LocalDate todayDate = LocalDate.now();
         List<OutputDTO> outputList = new ArrayList<>();
 
@@ -336,7 +320,7 @@ public class IdCardOcrUtils {
         return outputList;
     }
 
-    private static int[] validDate(String date) {
+    private int[] validDate(String date) {
         String[] dateSplit = date.split(" ");
         if (dateSplit.length == 6) {
             return Arrays.stream(dateSplit).mapToInt(Integer::parseInt).toArray();
@@ -360,7 +344,7 @@ public class IdCardOcrUtils {
         return res.stream().mapToInt(Integer::parseInt).toArray();
     }
 
-    public static List<String> dateVerification(String appendText) {
+    public List<String> dateVerification(String appendText) {
         List<String> resStrList = new ArrayList<>(10);
 
         String allChar = "(\\u4e00-\\u9fa5|.)";

@@ -103,27 +103,11 @@ public class OcrCPP implements AutoCloseable {
             throw new IllegalArgumentException("参数不能含有非 ASCII 字符");
         }
 
-        File workingDir = exePath.getParentFile();
-
-        // 获取当前Jar包所在目录
-        String jarPath = OcrCPP.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath();
-        String jarDir1 = new File(jarPath).getParent();
-        String jarDir2 = new File(jarDir1).getParent();
-
-        File file = new File("jar:file:/Users/lmc10213/code/pictureOCRV1/out/artifacts/pictureOCRV1_jar/pictureOCRV1.jar!/Paddle_CPP/11.txt");
-
-        URL fileURL = this.getClass().getResource("Paddle_CPP/PaddleOCR_json.exe");
-        fileURL.getPath();
-//        ProcessBuilder processBuilder = new ProcessBuilder(jarDir1 + new OcrProperties().getOcrExe(), commands.toString());
-//        processBuilder.directory(new File(jarDir2));
-
-
-        // 构建exe文件的路径
-        String exeFilePath = Paths.get(jarDir1, "Paddle_CPP/PaddleOCR_json.exe").toString();
-
-
-        ProcessBuilder processBuilder = new ProcessBuilder("Paddle_CPP/PaddleOCR_json.exe", commands.toString());
-        processBuilder.directory(new File("pictureOCRV1.jar!/"));
+        String jarPathParent = exePath.getParent();
+        ProcessBuilder processBuilder = new ProcessBuilder(exePath.getPath(), commands.toString());
+        System.out.println(exePath.getPath());
+        System.out.println(jarPathParent);
+        processBuilder.directory(new File(jarPathParent));
         processBuilder.redirectErrorStream(true); //统一异常输出和正常输出
         process = processBuilder.start(); //启动进程
 
