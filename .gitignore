@@ -3,6 +3,8 @@ target/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
+out/
+src/main/resources/Paddle_CPP/
 
 ### STS ###
 .apt_generated
