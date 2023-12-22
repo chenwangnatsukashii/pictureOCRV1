@@ -3,7 +3,10 @@ package com.example.pictureocrv1.ocr;
 import com.google.gson.Gson;
 
 import java.io.*;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -76,7 +79,7 @@ public class OcrCPP implements AutoCloseable {
     Gson gson;
     boolean ocrReady;
 
-    public OcrCPP(File exePath, Map<String, Object> arguments) throws IOException {
+    public OcrCPP(File exePath, Map<String, Object> arguments) throws IOException, URISyntaxException {
         gson = new Gson();
 
         StringBuilder commands = new StringBuilder();
@@ -101,8 +104,26 @@ public class OcrCPP implements AutoCloseable {
         }
 
         File workingDir = exePath.getParentFile();
-        ProcessBuilder processBuilder = new ProcessBuilder(exePath.toString(), commands.toString());
-        processBuilder.directory(workingDir);
+
+        // 获取当前Jar包所在目录
+        String jarPath = OcrCPP.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath();
+        String jarDir1 = new File(jarPath).getParent();
+        String jarDir2 = new File(jarDir1).getParent();
+
+        File file = new File("jar:file:/Users/lmc10213/code/pictureOCRV1/out/artifacts/pictureOCRV1_jar/pictureOCRV1.jar!/Paddle_CPP/11.txt");
+
+        URL fileURL = this.getClass().getResource("Paddle_CPP/PaddleOCR_json.exe");
+        fileURL.getPath();
+//        ProcessBuilder processBuilder = new ProcessBuilder(jarDir1 + new OcrProperties().getOcrExe(), commands.toString());
+//        processBuilder.directory(new File(jarDir2));
+
+
+        // 构建exe文件的路径
+        String exeFilePath = Paths.get(jarDir1, "Paddle_CPP/PaddleOCR_json.exe").toString();
+
+
+        ProcessBuilder processBuilder = new ProcessBuilder("Paddle_CPP/PaddleOCR_json.exe", commands.toString());
+        processBuilder.directory(new File("pictureOCRV1.jar!/"));
         processBuilder.redirectErrorStream(true); //统一异常输出和正常输出
         process = processBuilder.start(); //启动进程
 
@@ -112,6 +133,7 @@ public class OcrCPP implements AutoCloseable {
         ocrReady = false;
         while (!ocrReady) {
             String line = reader.readLine();
+            System.out.println(line);
             if (line.contains("OCR init completed")) {
                 ocrReady = true;
             }

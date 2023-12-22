@@ -13,6 +13,7 @@ import javax.annotation.PreDestroy;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -72,6 +73,8 @@ public class OcrService {
             ocrCPP = new OcrCPP(new File(ModelUrlUtils.getRealUrl(prop.getOcrExe()).replaceFirst("file:/", "")), arguments);
         } catch (IOException e) {
             e.printStackTrace();
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
         }
     }
 
