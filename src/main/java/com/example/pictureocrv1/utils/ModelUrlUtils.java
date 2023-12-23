@@ -28,22 +28,13 @@ public class ModelUrlUtils {
      */
     @SneakyThrows
     public String getRealUrl(String name) {
-        URI uri = new ClassPathResource(name).getURI();
-        System.out.println("model uri of " + name + " is " + uri);
-        if (uri.toString().startsWith("jar:")) {
-
-            // 获取当前Jar包所在目录
-            String jarPath = OcrCPP.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath();
-            String jarPathParent = new File(jarPath).getParent();
-
-            // 构建exe文件的路径
-            String exeFilePath = Paths.get(jarPathParent, new OcrProperties().getOcrExe()).toString();
-            System.out.println(exeFilePath);
-
-            return exeFilePath;
+        String exePath = System.getProperty("exe.path");
+        if (exePath == null) {
+            exePath = ModelUrlUtils.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath();
+            exePath = new File(exePath).getParentFile().getParent() +
+                    File.separator + "out" + File.separator + "artifacts" + File.separator + "pictureOCRV1_jar" + File.separator;
         }
-
-        return uri.toString();
+        return exePath + name;
     }
 
 }

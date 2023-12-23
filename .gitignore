@@ -33,3 +33,4 @@ build/
 .vscode/
 
 /out/artifacts/pictureOCRV1_jar/pictureOCRV1.jar
+/out/artifacts/pictureOCRV1_jar/Paddle_CPP.zip
