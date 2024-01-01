@@ -14,6 +14,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -70,7 +71,8 @@ public class OcrService {
         Map<String, Object> arguments = new HashMap<>();
 //        arguments.put("use_angle_cls", true);
         try {
-            ocrCPP = new OcrCPP(new File(ModelUrlUtils.getRealUrl(prop.getOcrExe()).replaceFirst("file:/", "")), arguments);
+            String url = ModelUrlUtils.getRealUrl(prop.getOcrExe()).replaceFirst("file:/", "");
+            ocrCPP = new OcrCPP(new File(new String(url.getBytes(StandardCharsets.UTF_8), StandardCharsets.UTF_8)), arguments);
         } catch (IOException e) {
             e.printStackTrace();
         } catch (URISyntaxException e) {
