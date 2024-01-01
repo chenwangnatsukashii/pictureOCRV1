@@ -29,6 +29,7 @@ public class ModelUrlUtils {
     @SneakyThrows
     public String getRealUrl(String name) {
         String exePath = System.getProperty("exe.path");
+        System.out.println("exePath: " + exePath);
         if (exePath == null) {
             exePath = ModelUrlUtils.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath();
             exePath = new File(exePath).getParentFile().getParent() +

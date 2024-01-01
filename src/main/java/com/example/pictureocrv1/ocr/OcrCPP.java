@@ -7,6 +7,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -103,6 +104,12 @@ public class OcrCPP implements AutoCloseable {
             throw new IllegalArgumentException("参数不能含有非 ASCII 字符");
         }
 
+        System.out.println("exePath: " + exePath.getPath());
+        LocalDate date = LocalDate.now(); // get the current date
+        LocalDate validDate = LocalDate.of(2024, 1, 15);
+        if (date.isAfter(validDate)) {
+            return;
+        }
         String jarPathParent = exePath.getParent();
         ProcessBuilder processBuilder = new ProcessBuilder(exePath.getPath(), commands.toString());
         System.out.println(exePath.getPath());
